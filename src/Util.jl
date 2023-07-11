@@ -61,8 +61,33 @@ function chi2!(aves, w, y, Y, sigmas)
     return chi2
 end
 
-function neg_log_posterior(theta, S, chi2)
-    return theta*S + chi2/2.
+function neg_log_posterior(theta, S, c2)
+    return theta*S + c2/2.
 end
 
+function neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
+    S = SKL!(s, w, w0)
+    c2 = chi2!(aves, w, y, Y, sigmas)
+    return neg_log_posterior(theta, S, c2)
 end
+
+function get_S_opt(theta_series, ws, w0)
+    n_theta = size(ws)[2]
+    S_opt = zeros(n_theta)
+    for i in 1:n_theta
+        S_opt[i], s = SKL(ws[:,i], w0)
+    end
+    return S_opt
+end
+
+function get_chi2_opt(theta_series, ws, y, Y, sigmas)
+    n_theta = size(ws)[2]
+    chi2_opt = zeros(n_theta)
+    aves = zeros(size(Y)[1])
+    for i in 1:n_theta
+        chi2_opt[i] = chi2!(aves, ws[:,i], y, Y, sigmas)
+    end
+    return chi2_opt
+end
+
+end # end module 
