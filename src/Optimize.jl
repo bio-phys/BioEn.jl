@@ -6,7 +6,7 @@ function forces_from_averages!(f, aves, Y, sigmas, theta)
     for i in eachindex(f)
         f[i] = -(aves[i]-Y[i])/(theta*sigmas[i]^2)
     end
-    return 
+    return nothing
 end
 
 function weights_from_forces!(w, w0, f, y)
@@ -27,6 +27,7 @@ function weights_from_forces!(w, w0, f, y)
         norm += w[alpha]
     end
     w ./= norm
+    return nothing
 end
 
 function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
@@ -45,6 +46,7 @@ function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
             grad[k] = tmp*w[alpha]*(y[alpha, k]-aves[k])
         end
     end
+    return nothing
 end
 
 
@@ -68,7 +70,9 @@ function optimize!(grad, aves, s, theta, f_init, w, w0, w_init, y, Y, sigmas)
     return results
 end
 
-function optimize_series(theta_series, N, M, w0, y, Y, sigmas)
+function optimize_series(theta_series, N, M, w0, y, Y, sigmas, options)
+    method = Optim.LBFGS()
+    
     w_init = copy(w0)
     w = zeros(N)
     aves = zeros(M)
@@ -81,6 +85,7 @@ function optimize_series(theta_series, N, M, w0, y, Y, sigmas)
     ws = zeros((N, n_thetas))
     fs = zeros((M, n_thetas))
     Util.averages!(aves, w_init, y)
+    results = []
     for (i, theta) in enumerate(theta_series)
         println("theta = $theta" )
         Forces.forces_from_averages!(f_init, aves, Y, sigmas, theta)
@@ -96,13 +101,31 @@ function optimize_series(theta_series, N, M, w0, y, Y, sigmas)
             #print(w)
             return Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
         end
-        res = Optim.optimize(func, g!, f_init, Optim.LBFGS(), Optim.Options(iterations = 10_000, f_reltol = 1e-5))
+        res = Optim.optimize(func, g!, f_init, method, options)
         f_final = Optim.minimizer(res)
         ws[:, i] .= w 
+        fs[:, i] .= f_final
         println(f_final)
+        push!(results, res)
     end
-    return ws, fs
+    return ws, fs, results
 end
+
+# function fg!(F,G,x)
+#   # do common computations here
+#   # ...
+#   if G != nothing
+#     # code to compute gradient here
+#     # writing the result to the vector G
+#   end
+#   if F != nothing
+#     # value = ... code to compute objective function
+#     return value
+#   end
+# end
+
+# Optim.optimize(Optim.only_fg!(fg!), [0., 0.], Optim.LBFGS())
+
 
 
 end
