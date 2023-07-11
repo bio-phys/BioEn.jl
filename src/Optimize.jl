@@ -1,6 +1,7 @@
 module Forces
 
 import ..Util, Optim
+using Printf
 
 function forces_from_averages!(f, aves, Y, sigmas, theta)
     for i in eachindex(f)
@@ -49,9 +50,28 @@ function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
     return nothing
 end
 
+function optimize_fg!(grad, aves, s, theta, f, w, w0, w_init, y, Y, sigmas, method, options)
+    # calculate forces
+    # calculate weights from forces
+    # evaluate L
+    # evalutate gradient of L 
+    function fg!(F, G, x)
+        weights_from_forces!(w, w0, f, y)
+        Util.averages!(aves, w, y)
+        if G != nothing
+            Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
+            G = grad
+        end
+        if F != nothing
+            return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
+        end
+    end
+    results = Optim.optimize(Optim.only_fg!(fg!), f, method, options)
+    return results
+end
 
 
-function optimize!(grad, aves, s, theta, f_init, w, w0, w_init, y, Y, sigmas)
+function optimize!(grad, aves, s, theta, f, w, w0, w_init, y, Y, sigmas, method, options)
     # calculate forces
     # calculate weights from forces
     # evaluate L
@@ -66,66 +86,38 @@ function optimize!(grad, aves, s, theta, f_init, w, w0, w_init, y, Y, sigmas)
         Util.averages!(aves, w, y)
         return Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
     end
-    results = Optim.optimize(func, g!, f_init, Optim.LBFGS())
+    results = Optim.optimize(func, g!, f, method, options)
     return results
 end
 
-function optimize_series(theta_series, N, M, w0, y, Y, sigmas, options)
-    method = Optim.LBFGS()
-    
+function optimize_series(theta_series, N, M, w0, y, Y, sigmas, method, options)
+
     w_init = copy(w0)
     w = zeros(N)
     aves = zeros(M)
     grad = zeros(M)
     s = zeros(N)
     f = zeros(M)
-    f_init = zeros(M)
-    
     n_thetas = size(theta_series)[1]
     ws = zeros((N, n_thetas))
     fs = zeros((M, n_thetas))
     Util.averages!(aves, w_init, y)
     results = []
-    for (i, theta) in enumerate(theta_series)
-        println("theta = $theta" )
-        Forces.forces_from_averages!(f_init, aves, Y, sigmas, theta)
-        function func(f) 
-            Forces.weights_from_forces!(w, w0, f, y)
-            Util.averages!(aves, w, y)
-            return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
-        end
     
-        function g!(grad, f)
-            Forces.weights_from_forces!(w, w0, f, y)
-            Util.averages!(aves, w, y)
-            #print(w)
-            return Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
-        end
-        res = Optim.optimize(func, g!, f_init, method, options)
+    for (i, theta) in enumerate(theta_series)
+        
+        Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
+        res = optimize_fg!(grad, aves, s, theta, f, w, w0, w_init, y, Y, sigmas, method, options)
         f_final = Optim.minimizer(res)
         ws[:, i] .= w 
         fs[:, i] .= f_final
-        println(f_final)
+        @printf("theta = %3.2e", theta)
+        fmt = Printf.Format( " f = "*("%3.2e "^size(f_final)[1]) )
+        Printf.format(stdout, fmt, f_final... )
+        @printf("\n")
         push!(results, res)
     end
     return ws, fs, results
 end
 
-# function fg!(F,G,x)
-#   # do common computations here
-#   # ...
-#   if G != nothing
-#     # code to compute gradient here
-#     # writing the result to the vector G
-#   end
-#   if F != nothing
-#     # value = ... code to compute objective function
-#     return value
-#   end
-# end
-
-# Optim.optimize(Optim.only_fg!(fg!), [0., 0.], Optim.LBFGS())
-
-
-
-end
+end # module
