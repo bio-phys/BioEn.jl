@@ -2,11 +2,31 @@ module Forces
 
 import ..Util, Optim
 
-function forces!(f, aves, Y, sigmas, theta)
+function forces_from_averages!(f, aves, Y, sigmas, theta)
     for i in eachindex(f)
-        f[i] = (aves[i]-Y[i])/(theta*sigmas[i])
+        f[i] = -(aves[i]-Y[i])/(theta*sigmas[i]^2)
     end
     return 
+end
+
+function weights_from_forces!(w, w0, f, y)
+    max = 0. 
+    for alpha in eachindex(w)
+        tmp = 0.
+        for j in eachindex(f)
+            tmp += y[alpha, j]*f[j]
+        end    
+        w[alpha] = tmp + log(w0[alpha])
+        if w[alpha] > max 
+            max = w[alpha]
+        end
+    end
+    norm = 0. 
+    for alpha in eachindex(w)
+        w[alpha] = exp(w[alpha]-max)
+        norm += w[alpha]
+    end
+    w ./= norm
 end
 
 function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
@@ -27,34 +47,61 @@ function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
     end
 end
 
-function weights_from_forces!(w, w0, f, y)
-    for alpha in eachindex(w)
-        tmp = 0.
-        for j in eachindex(f)
-            tmp += y[alpha, j]*f[j]
-        end    
-        w[alpha] = w0[alpha]*exp(tmp)
-    end
-    w ./= sum(w)
-end
 
-function optimize!(grad, aves, s, theta, w, w0, w_init, y, Y, sigmas)
+
+function optimize!(grad, aves, s, theta, f_init, w, w0, w_init, y, Y, sigmas)
     # calculate forces
     # calculate weights from forces
     # evaluate L
     # evalutate gradient of L 
     function func(f) 
-        Forces.weights_from_forces!(w, w0, f, y)
+        weights_from_forces!(w, w0, f, y)
         Util.averages!(aves, w, y)
         return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
     end
     function g!(grad, f)
-        Forces.weights_from_forces!(w, w0, f, y)
+        weights_from_forces!(w, w0, f, y)
         Util.averages!(aves, w, y)
         return Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
     end
     results = Optim.optimize(func, g!, f_init, Optim.LBFGS())
     return results
+end
+
+function optimize_series(theta_series, N, M, w0, y, Y, sigmas)
+    w_init = copy(w0)
+    w = zeros(N)
+    aves = zeros(M)
+    grad = zeros(M)
+    s = zeros(N)
+    f = zeros(M)
+    f_init = zeros(M)
+    
+    n_thetas = size(theta_series)[1]
+    ws = zeros((N, n_thetas))
+    fs = zeros((M, n_thetas))
+    Util.averages!(aves, w_init, y)
+    for (i, theta) in enumerate(theta_series)
+        println("theta = $theta" )
+        Forces.forces_from_averages!(f_init, aves, Y, sigmas, theta)
+        function func(f) 
+            Forces.weights_from_forces!(w, w0, f, y)
+            Util.averages!(aves, w, y)
+            return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
+        end
+    
+        function g!(grad, f)
+            Forces.weights_from_forces!(w, w0, f, y)
+            Util.averages!(aves, w, y)
+            #print(w)
+            return Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
+        end
+        res = Optim.optimize(func, g!, f_init, Optim.LBFGS(), Optim.Options(iterations = 10_000, f_reltol = 1e-5))
+        f_final = Optim.minimizer(res)
+        ws[:, i] .= w 
+        println(f_final)
+    end
+    return ws, fs
 end
 
 
