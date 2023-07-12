@@ -109,12 +109,12 @@ function optimize_series(theta_series, N, M, w0, y, Y, sigmas, method, options)
         
         Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
         res = optimize_fg!(grad, aves, s, theta, f, w, w0, g0, w_init, y, Y, sigmas, method, options)
-        f_final = Optim.minimizer(res)
+        #f_final = Optim.minimizer(res)
         ws[:, i] .= w 
-        fs[:, i] .= f_final
+        fs[:, i] .= f
         @printf("theta = %3.2e", theta)
         fmt = Printf.Format( " f = "*("%3.2e "^M) )
-        Printf.format(stdout, fmt, f_final... )
+        Printf.format(stdout, fmt, f... )
         @printf("\n")
         push!(results, res)
     end
