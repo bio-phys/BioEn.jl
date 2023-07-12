@@ -53,12 +53,8 @@ function chi2(aves, w, y, Y, sigmas)
 end
 
 function chi2!(aves, w, y, Y, sigmas)
-    chi2 = 0.
     averages!(aves, w, y)
-    for i in eachindex(Y)
-        chi2 += ( (aves[i]-Y[i])/sigmas[i] )^2
-    end
-    return chi2
+    return chi2(aves, w, y, Y, sigmas)
 end
 
 function neg_log_posterior(theta, S, c2)
@@ -78,7 +74,7 @@ function neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
 end
 
 function get_S_opt(theta_series, ws, w0)
-    n_theta = size(ws)[2]
+    n_theta = size(theta_series)[1]
     S_opt = zeros(n_theta)
     for i in 1:n_theta
         S_opt[i], s = SKL(ws[:,i], w0)
@@ -87,7 +83,7 @@ function get_S_opt(theta_series, ws, w0)
 end
 
 function get_chi2_opt(theta_series, ws, y, Y, sigmas)
-    n_theta = size(ws)[2]
+    n_theta = size(theta_series)[1]
     chi2_opt = zeros(n_theta)
     aves = zeros(size(Y)[1])
     for i in 1:n_theta
