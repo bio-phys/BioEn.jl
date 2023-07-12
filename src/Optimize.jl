@@ -10,14 +10,14 @@ function forces_from_averages!(f, aves, Y, sigmas, theta)
     return nothing
 end
 
-function weights_from_forces!(w, w0, f, y)
+function weights_from_forces!(w, g0, f, y)
     max = 0. 
     for alpha in eachindex(w)
         tmp = 0.
         for j in eachindex(f)
             tmp += y[alpha, j]*f[j]
         end    
-        w[alpha] = tmp + log(w0[alpha])
+        w[alpha] = tmp + g0[alpha]
         if w[alpha] > max 
             max = w[alpha]
         end
@@ -31,7 +31,7 @@ function weights_from_forces!(w, w0, f, y)
     return nothing
 end
 
-function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
+function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
     for k in eachindex(grad)
         for alpha in eachindex(w)
             dummy = w[alpha]/w0[alpha]
@@ -50,43 +50,43 @@ function grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
     return nothing
 end
 
-function optimize_fg!(grad, aves, s, theta, f, w, w0, w_init, y, Y, sigmas, method, options)
+
+
+
+function optimize!(grad, aves, s, theta, f, w, w0, g0, w_init, y, Y, sigmas, method, options)
     # calculate forces
     # calculate weights from forces
-    # evaluate L
-    # evalutate gradient of L 
+    # evaluate L and its gradient
+    function func(f) 
+        weights_from_forces!(w, g0, f, y)
+        Util.averages!(aves, w, y)
+        return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
+    end
+    function g!(grad, f)
+        weights_from_forces!(w, g0, f, y)
+        Util.averages!(aves, w, y)
+        return Forces.grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
+    end
+    results = Optim.optimize(func, g!, f, method, options)
+    return results
+end
+
+function optimize_fg!(grad, aves, s, theta, f, w, w0, g0, w_init, y, Y, sigmas, method, options)
+
     function fg!(F, G, x)
-        weights_from_forces!(w, w0, f, y)
+        weights_from_forces!(w, g0, f, y)
         Util.averages!(aves, w, y)
         if G != nothing
-            Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
+            Forces.grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
             G = grad
         end
         if F != nothing
             return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
         end
     end
+    
     results = Optim.optimize(Optim.only_fg!(fg!), f, method, options)
-    return results
-end
-
-
-function optimize!(grad, aves, s, theta, f, w, w0, w_init, y, Y, sigmas, method, options)
-    # calculate forces
-    # calculate weights from forces
-    # evaluate L
-    # evalutate gradient of L 
-    function func(f) 
-        weights_from_forces!(w, w0, f, y)
-        Util.averages!(aves, w, y)
-        return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
-    end
-    function g!(grad, f)
-        weights_from_forces!(w, w0, f, y)
-        Util.averages!(aves, w, y)
-        return Forces.grad_neg_log_posterior!(grad, aves, s, theta, w, w0, y, Y, sigmas)
-    end
-    results = Optim.optimize(func, g!, f, method, options)
+    
     return results
 end
 
@@ -103,16 +103,17 @@ function optimize_series(theta_series, N, M, w0, y, Y, sigmas, method, options)
     fs = zeros((M, n_thetas))
     Util.averages!(aves, w_init, y)
     results = []
+    g0 = log.(w0)
     
     for (i, theta) in enumerate(theta_series)
         
         Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
-        res = optimize_fg!(grad, aves, s, theta, f, w, w0, w_init, y, Y, sigmas, method, options)
+        res = optimize_fg!(grad, aves, s, theta, f, w, w0, g0, w_init, y, Y, sigmas, method, options)
         f_final = Optim.minimizer(res)
         ws[:, i] .= w 
         fs[:, i] .= f_final
         @printf("theta = %3.2e", theta)
-        fmt = Printf.Format( " f = "*("%3.2e "^size(f_final)[1]) )
+        fmt = Printf.Format( " f = "*("%3.2e "^M) )
         Printf.format(stdout, fmt, f_final... )
         @printf("\n")
         push!(results, res)
