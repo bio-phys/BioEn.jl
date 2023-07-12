@@ -47,7 +47,7 @@ end
 function chi2(aves, w, y, Y, sigmas)
     chi2 = 0.
     for i in eachindex(Y)
-        chi2 += ((aves[i]-Y[i])/sigmas[i])^2
+        chi2 += ( (aves[i]-Y[i])/sigmas[i] )^2
     end
     return chi2
 end
@@ -56,7 +56,7 @@ function chi2!(aves, w, y, Y, sigmas)
     chi2 = 0.
     averages!(aves, w, y)
     for i in eachindex(Y)
-        chi2 += ((aves[i]-Y[i])/sigmas[i])^2
+        chi2 += ( (aves[i]-Y[i])/sigmas[i] )^2
     end
     return chi2
 end
@@ -68,6 +68,12 @@ end
 function neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
     S = SKL!(s, w, w0)
     c2 = chi2!(aves, w, y, Y, sigmas)
+    return neg_log_posterior(theta, S, c2)
+end
+
+function neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
+    S = SKL!(s, w, w0)
+    c2 = chi2(aves, w, y, Y, sigmas)
     return neg_log_posterior(theta, S, c2)
 end
 

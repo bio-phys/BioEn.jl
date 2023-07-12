@@ -60,7 +60,7 @@ function optimize!(grad, aves, s, theta, f, w, w0, g0, w_init, y, Y, sigmas, met
     function func(f) 
         weights_from_forces!(w, g0, f, y)
         Util.averages!(aves, w, y)
-        return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
+        return Forces.Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
     end
     function g!(grad, f)
         weights_from_forces!(w, g0, f, y)
@@ -81,7 +81,7 @@ function optimize_fg!(grad, aves, s, theta, f, w, w0, g0, w_init, y, Y, sigmas, 
             G = grad
         end
         if F != nothing
-            return Forces.Util.neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
+            return Forces.Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
         end
     end
     
@@ -112,7 +112,7 @@ function optimize_series(theta_series, N, M, w0, y, Y, sigmas, method, options)
         #f_final = Optim.minimizer(res)
         ws[:, i] .= w 
         fs[:, i] .= f
-        @printf("theta = %3.2e", theta)
+        @printf("theta[%05d] = %3.2e", i, theta)
         fmt = Printf.Format( " f = "*("%3.2e "^M) )
         Printf.format(stdout, fmt, f... )
         @printf("\n")
