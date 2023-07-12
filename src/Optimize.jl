@@ -73,13 +73,11 @@ function optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, opt
     # calculate weights from forces
     # evaluate L and its gradient
     function func(f) 
-        weights_from_forces!(w, g0, f, y)
-        Util.averages!(aves, w, y)
+        weights_and_averages!(w, aves, g0, f, y)
         return Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
     end
     function g!(grad, f)
-        weights_from_forces!(w, g0, f, y)
-        Util.averages!(aves, w, y)
+        weights_and_averages!(w, aves, g0, f, y)
         return grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
     end
     results = Optim.optimize(func, g!, f, method, options)
@@ -113,7 +111,6 @@ function print_info(i, theta, M, f)
 end
 
 function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
-
     w = copy(w0) # we start with a large theta value
     g0 = log.(w0) # for efficiency reasons
 
@@ -133,9 +130,7 @@ function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
     for (i, theta) in enumerate(theta_series)
         Util.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
-        #print(f, " ")
         #res = optimize_grad_num!(aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
-        #println(f, " ", Optim.minimizer(res))
         res = optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
         #res = optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
 
@@ -143,9 +138,7 @@ function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
         weights_from_forces!(w, g0, f, y)
         ws[:, i] .= w 
         fs[:, i] .= f
-        # f[1]==Optim.minimizer(res))
         print_info(i, theta, M, f)
-        #println(Optim.minimum(res))
         push!(results, res)
     end
     return ws, fs, results

@@ -15,9 +15,7 @@ function SKL!(s, p, q)
             S += s[i]
         end
     end
-    # dh = log.(p/q))
     return S
-    #isapprox(1e-20, 0.0; atol=eps(Float64), rtol=0)
 end
 
 function SKL(p, q)
@@ -25,6 +23,7 @@ function SKL(p, q)
     S = SKL!(s, p, q)
     return S, s
 end
+
 """
 dim(y) = NxM, where N is the number of samples and M the number of data points. 
 """
