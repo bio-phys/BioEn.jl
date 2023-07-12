@@ -47,21 +47,26 @@ function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
     return nothing
 end
 
+function weights_and_averages!(w, aves, g0, f, y)
+    weights_from_forces!(w, g0, f, y)
+    Util.averages!(aves, w, y)
+end
+
+
+"""
+Numerical approximation of gradient.
+"""
 function optimize_grad_num!(aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
     # calculate forces
     # calculate weights from forces
-    # evaluate L and its gradient
     function func(f) 
-        weights_from_forces!(w, g0, f, y)
-        Util.averages!(aves, w, y)
+        weights_and_averages!(w, aves, g0, f, y)
         return Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
     end
    
     results = Optim.optimize(func, f, method, options)
     return results
 end
-
-
 
 function optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
     # calculate forces
@@ -83,12 +88,11 @@ end
 
 function optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
 
-    function fg!(F, G, x)
-        weights_from_forces!(w, g0, f, y)
-        Util.averages!(aves, w, y)
+    function fg!(F, G, f)
+        weights_and_averages!(w, aves, g0, f, y)
         if G != nothing
             grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
-            G = grad
+            G .= grad
         end
         if F != nothing
             return Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
@@ -128,10 +132,14 @@ function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
     
     for (i, theta) in enumerate(theta_series)
         Util.averages!(aves, w, y)
-        Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
-        res = optimize_grad_num!(aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
-        #res = optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
-        #f = Optim.minimizer(res)
+        #Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
+        #print(f, " ")
+        #res = optimize_grad_num!(aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+        #println(f, " ", Optim.minimizer(res))
+        res = optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+        #res = optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+
+        f = Optim.minimizer(res)
         weights_from_forces!(w, g0, f, y)
         ws[:, i] .= w 
         fs[:, i] .= f
