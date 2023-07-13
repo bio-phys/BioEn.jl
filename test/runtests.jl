@@ -27,7 +27,7 @@ aves = zeros(M)
 f = zeros(M)
 w = zeros(N)
 Util.averages!(aves, w0, y)
-Forces.forces_from_averages!(f, aves, aves, sigmas, theta)
+Forces.forces_from_averages!(f, aves, aves, theta, sigmas)
 Forces.weights_from_forces!(w, g0, f, y)
 
 @test all((isapprox.(w, w0)).==true)

@@ -65,17 +65,17 @@ end
 """
 Chi-squared value for given weight
 """
-function chi2(aves, w, y, Y, sigmas)
+function chi2(aves, w, y, Y)
     chi2 = 0.
     for i in eachindex(Y)
-        chi2 += ( (aves[i]-Y[i])/sigmas[i] )^2
+        chi2 += (aves[i]-Y[i])^2
     end
     return chi2
 end
 
-function chi2!(aves, w, y, Y, sigmas)
+function chi2!(aves, w, y, Y)
     averages!(aves, w, y)
-    return chi2(aves, w, y, Y, sigmas)
+    return chi2(aves, w, y, Y)
 end
 
 """
@@ -85,15 +85,15 @@ function neg_log_posterior(theta, S, c2)
     return theta*S + c2/2.
 end
 
-function neg_log_posterior!(aves, theta, w, w0, y, Y, sigmas)
+function neg_log_posterior!(aves, theta, w, w0, y, Y)
     S = SKL(w, w0)
-    c2 = chi2!(aves, w, y, Y, sigmas)
+    c2 = chi2!(aves, w, y, Y)
     return neg_log_posterior(theta, S, c2)
 end
 
-function neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
+function neg_log_posterior(aves, theta, w, w0, y, Y)
     S = SKL(w, w0)
-    c2 = chi2(aves, w, y, Y, sigmas)
+    c2 = chi2(aves, w, y, Y)
     return neg_log_posterior(theta, S, c2)
 end
 
@@ -112,12 +112,12 @@ end
 """
 Chi-squared from 2d array of weights
 """
-function get_chi2_opt(theta_series, ws, y, Y, sigmas)
+function get_chi2_opt(theta_series, ws, y, Y)
     n_theta = size(theta_series)[1]
     chi2_opt = zeros(n_theta)
     aves = zeros(size(Y)[1])
     for i in 1:n_theta
-        chi2_opt[i] = chi2!(aves, ws[:,i], y, Y, sigmas)
+        chi2_opt[i] = chi2!(aves, ws[:,i], y, Y)
     end
     return chi2_opt
 end
