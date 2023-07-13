@@ -31,7 +31,5 @@ Forces.forces_from_averages!(f, aves, aves, sigmas, theta)
 Forces.weights_from_forces!(w, g0, f, y)
 
 @test all((isapprox.(w, w0)).==true)
-S, s = Util.SKL(w0, w0)
-@test isapprox(S, 0.) 
-S = Util.SKL!(s, w0, w0)
+S = Util.SKL(w0, w0)
 @test isapprox(S, 0.) 

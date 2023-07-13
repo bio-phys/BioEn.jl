@@ -6,22 +6,15 @@ function theta_series(min, max, n; base=2.)
     return collect(powers), thetas
 end
     
-function SKL!(s, p, q)
+function SKL(p, q)
     S = 0.
     for i in eachindex(p)
         tmp = p[i]/q[i]
         if tmp>eps(0.0)
-            s[i] = p[i]*log(tmp)
-            S += s[i]
+            S += p[i]*log(tmp)
         end
     end
     return S
-end
-
-function SKL(p, q)
-    s = zeros(size(p)[1])
-    S = SKL!(s, p, q)
-    return S, s
 end
 
 """
@@ -60,14 +53,14 @@ function neg_log_posterior(theta, S, c2)
     return theta*S + c2/2.
 end
 
-function neg_log_posterior!(aves, s, theta, w, w0, y, Y, sigmas)
-    S = SKL!(s, w, w0)
+function neg_log_posterior!(aves, theta, w, w0, y, Y, sigmas)
+    S = SKL(w, w0)
     c2 = chi2!(aves, w, y, Y, sigmas)
     return neg_log_posterior(theta, S, c2)
 end
 
-function neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
-    S = SKL!(s, w, w0)
+function neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
+    S = SKL(w, w0)
     c2 = chi2(aves, w, y, Y, sigmas)
     return neg_log_posterior(theta, S, c2)
 end
@@ -76,7 +69,7 @@ function get_S_opt(theta_series, ws, w0)
     n_theta = size(theta_series)[1]
     S_opt = zeros(n_theta)
     for i in 1:n_theta
-        S_opt[i], s = SKL(ws[:,i], w0)
+        S_opt[i] = SKL(ws[:,i], w0)
     end
     return S_opt
 end

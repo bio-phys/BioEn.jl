@@ -56,25 +56,25 @@ end
 """
 Numerical approximation of gradient.
 """
-function optimize_grad_num!(aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+function optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
     # calculate forces
     # calculate weights from forces
     function func(f) 
         weights_and_averages!(w, aves, g0, f, y)
-        return Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
+        return Util.neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
     end
    
     results = Optim.optimize(func, f, method, options)
     return results
 end
 
-function optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+function optimize!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
     # calculate forces
     # calculate weights from forces
     # evaluate L and its gradient
     function func(f) 
         weights_and_averages!(w, aves, g0, f, y)
-        return Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
+        return Util.neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
     end
     function g!(grad, f)
         weights_and_averages!(w, aves, g0, f, y)
@@ -84,7 +84,7 @@ function optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, opt
     return results
 end
 
-function optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+function optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
 
     function fg!(F, G, f)
         weights_and_averages!(w, aves, g0, f, y)
@@ -93,7 +93,7 @@ function optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, 
             G .= grad
         end
         if F != nothing
-            return Util.neg_log_posterior_2!(aves, s, theta, w, w0, y, Y, sigmas)
+            return Util.neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
         end
     end
     
@@ -120,7 +120,6 @@ function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
     
     aves = zeros(M)
     grad = zeros(M)
-    s = zeros(N) # auxiliary array for entropy
     f = zeros(M) # forces 
     ws = zeros((N, n_thetas)) # all optimal weights
     fs = zeros((M, n_thetas)) # all optimal forces
@@ -130,9 +129,9 @@ function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
     for (i, theta) in enumerate(theta_series)
         Util.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, sigmas, theta)
-        #res = optimize_grad_num!(aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
-        res = optimize_fg!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
-        #res = optimize!(grad, aves, s, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+        #res = optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+        res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+        #res = optimize!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
 
         f = Optim.minimizer(res)
         weights_from_forces!(w, g0, f, y)
