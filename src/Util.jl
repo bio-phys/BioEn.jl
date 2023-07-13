@@ -1,11 +1,17 @@
 module Util
 
+"""
+Series of theta values linear in log-space 
+"""
 function theta_series(min, max, n; base=2.)
     powers = range(min, max, n)
     thetas = base.^powers
     return collect(powers), thetas
 end
-    
+
+"""
+Discrete relative entropy (Kullback-Leibler divergence)
+"""
 function SKL(p, q)
     S = 0.
     for i in eachindex(p)
@@ -18,6 +24,8 @@ function SKL(p, q)
 end
 
 """
+Average of calculated observables for given weights 
+
 dim(y) = NxM, where N is the number of samples and M the number of data points. 
 """
 function averages!(aves, w, y)
@@ -36,6 +44,9 @@ function averages(w, y)
     return aves
 end
 
+"""
+Chi-squared value for given weight
+"""
 function chi2(aves, w, y, Y, sigmas)
     chi2 = 0.
     for i in eachindex(Y)
@@ -49,6 +60,9 @@ function chi2!(aves, w, y, Y, sigmas)
     return chi2(aves, w, y, Y, sigmas)
 end
 
+"""
+BioEn negative log-posterior
+"""
 function neg_log_posterior(theta, S, c2)
     return theta*S + c2/2.
 end
@@ -65,6 +79,9 @@ function neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
     return neg_log_posterior(theta, S, c2)
 end
 
+"""
+Relative entropy from 2d array of weights
+"""
 function get_S_opt(theta_series, ws, w0)
     n_theta = size(theta_series)[1]
     S_opt = zeros(n_theta)
@@ -74,6 +91,9 @@ function get_S_opt(theta_series, ws, w0)
     return S_opt
 end
 
+"""
+Chi-squared from 2d array of weights
+"""
 function get_chi2_opt(theta_series, ws, y, Y, sigmas)
     n_theta = size(theta_series)[1]
     chi2_opt = zeros(n_theta)

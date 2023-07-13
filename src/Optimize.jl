@@ -3,6 +3,9 @@ module Forces
 import ..Util, Optim
 using Printf
 
+"""
+Forces from averages [eq 18 of JCTC 2019]]
+"""
 function forces_from_averages!(f, aves, Y, sigmas, theta)
     for i in eachindex(f)
         f[i] = -(aves[i]-Y[i])/(theta*sigmas[i]^2)
@@ -10,6 +13,9 @@ function forces_from_averages!(f, aves, Y, sigmas, theta)
     return nothing
 end
 
+"""
+Weights from forces [eq 9 of JCTC 2019]
+"""
 function weights_from_forces!(w, g0, f, y)
     max = 0. # to avoid overflow when calcualting exp()
     for alpha in eachindex(w)
@@ -31,6 +37,9 @@ function weights_from_forces!(w, g0, f, y)
     return nothing
 end
 
+"""
+Gradient of the negative log-posterior [eq 20 of JCTC 2019]
+"""
 function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
     for k in eachindex(grad)
         grad[k]=0.
@@ -47,14 +56,16 @@ function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
     return nothing
 end
 
+"""
+Weights and averages from forces.
+"""
 function weights_and_averages!(w, aves, g0, f, y)
     weights_from_forces!(w, g0, f, y)
     Util.averages!(aves, w, y)
 end
 
-
 """
-Numerical approximation of gradient.
+Optimization with numerical approximation of gradient.
 """
 function optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
     # calculate forces
@@ -68,22 +79,9 @@ function optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, sigmas, method, opt
     return results
 end
 
-function optimize!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
-    # calculate forces
-    # calculate weights from forces
-    # evaluate L and its gradient
-    function func(f) 
-        weights_and_averages!(w, aves, g0, f, y)
-        return Util.neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
-    end
-    function g!(grad, f)
-        weights_and_averages!(w, aves, g0, f, y)
-        return grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
-    end
-    results = Optim.optimize(func, g!, f, method, options)
-    return results
-end
-
+"""
+Optimization with analytical approximation of gradient.
+"""
 function optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
 
     function fg!(F, G, f)
@@ -102,6 +100,9 @@ function optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, opt
     return results
 end
 
+"""
+Auxiliary function for printing information on optimization.
+"""
 function print_info(i, theta, M, f)
     @printf("theta[%05d] = %3.2e", i, theta)
     fmt = Printf.Format( " f = "*("%3.2e "^M) )
@@ -110,6 +111,9 @@ function print_info(i, theta, M, f)
     return nothing
 end
 
+"""
+Optimization for series of theta-values (from large to small)
+"""
 function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
     w = copy(w0) # we start with a large theta value
     g0 = log.(w0) # for efficiency reasons
@@ -144,3 +148,19 @@ function optimize_series(theta_series, w0, y, Y, sigmas, method, options)
 end
 
 end # module
+
+# function optimize!(grad, aves, theta, f, w, w0, g0, y, Y, sigmas, method, options)
+#     # calculate forces
+#     # calculate weights from forces
+#     # evaluate L and its gradient
+#     function func(f) 
+#         weights_and_averages!(w, aves, g0, f, y)
+#         return Util.neg_log_posterior(aves, theta, w, w0, y, Y, sigmas)
+#     end
+#     function g!(grad, f)
+#         weights_and_averages!(w, aves, g0, f, y)
+#         return grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y, sigmas)
+#     end
+#     results = Optim.optimize(func, g!, f, method, options)
+#     return results
+# end
