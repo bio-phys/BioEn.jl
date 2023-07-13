@@ -1,5 +1,23 @@
 module Util
 
+function normalize(Y_org::Array{<:Real,1}, sigmas::Array{<:Real,1})
+    Y = copy(Y_org)
+    for i in eachindex(Y)
+        Y[i] /= sigmas[i]
+    end
+    return Y 
+end
+
+function normalize(y_org::Array{<:Real,2}, sigmas::Array{<:Real,1})
+    y = copy(y_org)
+    for j in 1:size(y)[2]
+        for i in 1:size(y)[1]
+            y[i, j] /= sigmas[j]
+        end
+    end
+    return y 
+end
+
 """
 Series of theta values linear in log-space 
 """
