@@ -63,9 +63,9 @@ function averages(w, y)
 end
 
 """
-Chi-squared value for given weight
+Chi-squared value for given weight for use with normalized observabels and their average.
 """
-function chi2(aves, w, y, Y)
+function chi2(aves, Y)
     chi2 = 0.
     for i in eachindex(Y)
         chi2 += (aves[i]-Y[i])^2
@@ -75,7 +75,7 @@ end
 
 function chi2!(aves, w, y, Y)
     averages!(aves, w, y)
-    return chi2(aves, w, y, Y)
+    return chi2(aves, Y)
 end
 
 """
@@ -93,7 +93,7 @@ end
 
 function neg_log_posterior(aves, theta, w, w0, y, Y)
     S = SKL(w, w0)
-    c2 = chi2(aves, w, y, Y)
+    c2 = chi2(aves, Y)
     return neg_log_posterior(theta, S, c2)
 end
 
@@ -110,7 +110,7 @@ function get_S_opt(theta_series, ws, w0)
 end
 
 """
-Chi-squared from 2d array of weights
+Chi-squared from 2d array of weights for use with normalized observables.
 """
 function get_chi2_opt(theta_series, ws, y, Y)
     n_theta = size(theta_series)[1]

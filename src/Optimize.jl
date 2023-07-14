@@ -4,17 +4,17 @@ import ..Util, Optim
 using Printf
 
 """
-Forces from averages [eq 18 of JCTC 2019]]
+Normalized forces from averages [eq 18 of JCTC 2019]]
 """
 function forces_from_averages!(f, aves, Y, theta, sigmas)
     for i in eachindex(f)
-        f[i] = -(aves[i]-Y[i])/(theta*sigmas[i])
+        f[i] = -(aves[i]-Y[i])/(theta*sigmas[i]) # devide by sigmas[i] for normalized forces
     end
     return nothing
 end
 
 """
-Weights from forces [eq 9 of JCTC 2019]
+Weights from forces [eq 9 of JCTC 2019] (normalized or original observables).
 """
 function weights_from_forces!(w, g0, f, y)
     max = 0. # to avoid overflow when calcualting exp()
@@ -38,7 +38,7 @@ function weights_from_forces!(w, g0, f, y)
 end
 
 """
-Gradient of the negative log-posterior [eq 20 of JCTC 2019]
+Gradient of the negative log-posterior [eq 20 of JCTC 2019] for normalized forces and observables
 """
 function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
     for k in eachindex(grad)
@@ -57,7 +57,7 @@ function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
 end
 
 """
-Weights and averages from forces.
+Weights and averages from forces 
 """
 function weights_and_averages!(w, aves, g0, f, y)
     weights_from_forces!(w, g0, f, y)
