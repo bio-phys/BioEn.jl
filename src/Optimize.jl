@@ -4,11 +4,11 @@ import ..Util, Optim
 using Printf
 
 """
-Normalized forces from averages [eq 18 of JCTC 2019]]
+Normalized forces from normalized observables and their averages [eq 18 of JCTC 2019]]
 """
 function forces_from_averages!(f, aves, Y, theta, sigmas)
     for i in eachindex(f)
-        f[i] = -(aves[i]-Y[i])/(theta*sigmas[i]) # devide by sigmas[i] for normalized forces
+        f[i] = -(aves[i]-Y[i])/(theta) # not division by sigma for "normalized" forces
     end
     return nothing
 end
