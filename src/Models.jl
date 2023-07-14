@@ -1,4 +1,3 @@
-
 module DoubleWell
 
 import StatsBase
@@ -34,8 +33,8 @@ function sample(N, x, p)
     return StatsBase.sample(x, StatsBase.Weights(p), N)
 end
 
-function hist(sample, n, density=true)
-    counts = StatsBase.counts(sample, 1:n)
+function hist(sample, x, density=true)
+    counts = StatsBase.counts(sample, x)
     if density
         return counts./size(sample)[1]
     else 
