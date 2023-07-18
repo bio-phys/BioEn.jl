@@ -8,15 +8,15 @@ o No saving of results during theta-series.
 """
 module Forces
 
-import ..Util, Optim
+import ..Util, Optim, Random
 using Printf, Base.Threads 
 
 """
 Normalized forces from normalized observables and their averages [eq 18 of JCTC 2019]]
 """
-function forces_from_averages!(f, aves, Y, theta, sigmas)
+function forces_from_averages!(f, aves, Y, theta)
     for i in eachindex(f)
-        f[i] = ( Y[i]-aves[i] )/theta # not division by sigma for "normalized" forces
+        f[i] = ( Y[i]-aves[i] )/theta # NO division by sigma^2 for "normalized" forces
     end
     return nothing
 end
@@ -193,7 +193,7 @@ Newly optimized forces are used as initial conditions for next smaller value of 
 
 Reoptimize based on previous results 'fs_init' for forces for corresponding theta values.
 
-We use @threads for speed-up of computation. 
+We use @threads for speed-up of computation. For large theta, initial forces are close to zero. 
 
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
@@ -206,13 +206,13 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     g0 = log.(w0)
     
     for (i, theta) in enumerate(theta_series)
-        Util.averages!(aves, w, y)
+        #Util.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, theta)
         #res = optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
         res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
         #res = optimize!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
-        f = Optim.minimizer(res)
-        weights_from_forces!(w, g0, f, y)
+        f .= Optim.minimizer(res) # added dot to refer to same array
+        weights_from_forces!(w, g0, f, y) # weights should be updated and this line should be superfluous
         ws[:, i] .= w 
         fs[:, i] .= f
         print_info(i, theta, M, f)
@@ -221,18 +221,18 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     return ws, fs, results
 end
 
-function optimize_series(theta_series, w0, y, Y, method, options, fs_init)
+function optimize_series(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps loop outside?
     n_thetas, N, M = sizes(theta_series, y)
     ws, fs = allocate_output(N, M, n_thetas)
 
     results = Vector{Any}(undef, n_thetas)
     g0 = log.(w0)   
-    @threads for i in range(1, n_thetas)
+    @threads for i in Random.shuffle(range(1, n_thetas))
         theta = theta_series[i]
         w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
         f .= fs_init[i]
         res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
-        weights_from_forces!(w, g0, f, y)
+        weights_from_forces!(w, g0, f, y) # weights should be updated and this line should be superfluous
         ws[:, i] .= w 
         fs[:, i] .= f
         results[i] = deepcopy(res) 
