@@ -63,7 +63,10 @@ function averages(w, y)
 end
 
 """
-Chi-squared value for given weight for use with normalized observabels and their average.
+    chi2(aves, Y)
+
+Chi-squared value for given averages using normalized observabels.
+
 """
 function chi2(aves, Y)
     chi2 = 0.
@@ -73,32 +76,55 @@ function chi2(aves, Y)
     return chi2
 end
 
+"""
+    chi2!(aves, w, y, Y)
+
+Calculate averages in-place. 
+"""
 function chi2!(aves, w, y, Y)
     averages!(aves, w, y)
     return chi2(aves, Y)
 end
 
 """
-BioEn negative log-posterior
+    neg_log_posterior(theta, S, c2)
+
+BioEn negative log-posterior.
+
+    neg_log_posterior(aves, theta, w, w0, Y)
+
+Use pre-calculated averages for efficiency. 
+
+Useful for optimization, wher averages have to be pre-calculated for the objective function
+and its gradient. 
+
 """
 function neg_log_posterior(theta, S, c2)
     return theta*S + c2/2.
 end
 
-function neg_log_posterior!(aves, theta, w, w0, y, Y)
-    S = SKL(w, w0)
-    c2 = chi2!(aves, w, y, Y)
-    return neg_log_posterior(theta, S, c2)
-end
 
-function neg_log_posterior(aves, theta, w, w0, y, Y)
+function neg_log_posterior(aves, theta, w, w0, Y)
     S = SKL(w, w0)
     c2 = chi2(aves, Y)
     return neg_log_posterior(theta, S, c2)
 end
 
 """
-Relative entropy from 2d array of weights
+    neg_log_posterior!(aves, theta, w, w0, y, Y)
+
+Calculate averages in-place.
+"""
+function neg_log_posterior!(aves, theta, w, w0, y, Y)
+    S = SKL(w, w0)
+    c2 = chi2!(aves, w, y, Y)
+    return neg_log_posterior(theta, S, c2)
+end
+
+"""
+    get_S_opt(theta_series, ws, w0)
+
+Relative entropy from 2d array of weights.
 """
 function get_S_opt(theta_series, ws, w0)
     n_theta = size(theta_series)[1]
