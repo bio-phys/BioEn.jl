@@ -10,8 +10,8 @@ end
 
 function normalize(y_org::Array{<:Real,2}, sigmas::Array{<:Real,1})
     y = copy(y_org)
-    for j in 1:size(y)[2]
-        for i in 1:size(y)[1]
+    for j in 1:size(y, 2)
+        for i in 1:size(y, 1)
             y[i, j] /= sigmas[j]
         end
     end
@@ -47,9 +47,9 @@ Average of calculated observables for given weights
 dim(y) = NxM, where N is the number of samples and M the number of data points. 
 """
 function averages!(aves, w, y)
-    for i in 1:size(y)[2] # observables 
+    for i in 1:size(y, 2) # observables 
         aves[i] = 0.
-        for j in 1:size(y)[1]
+        for j in 1:size(y, 1)
             aves[i] += w[j]*y[j,i]
         end
     end
@@ -57,7 +57,7 @@ function averages!(aves, w, y)
 end
 
 function averages(w, y)
-    aves = zeros(size(y)[2])
+    aves = zeros(size(y, 2))
     averages!(aves, w, y)
     return aves
 end
@@ -127,7 +127,7 @@ end
 Relative entropy from 2d array of weights.
 """
 function get_S_opt(theta_series, ws, w0)
-    n_theta = size(theta_series)[1]
+    n_theta = size(theta_series, 1)
     S_opt = zeros(n_theta)
     for i in 1:n_theta
         S_opt[i] = SKL(ws[:,i], w0)
@@ -139,7 +139,7 @@ end
 Chi-squared from 2d array of weights for use with normalized observables.
 """
 function get_chi2_opt(theta_series, ws, y, Y)
-    n_theta = size(theta_series)[1]
+    n_theta = size(theta_series, 1)
     chi2_opt = zeros(n_theta)
     aves = zeros(size(Y)[1])
     for i in 1:n_theta
