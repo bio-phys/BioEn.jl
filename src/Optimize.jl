@@ -9,7 +9,7 @@ o No saving of results during theta-series.
 module Forces
 
 import ..Util, Optim
-using Printf
+using Printf, Base.Threads 
 
 """
 Normalized forces from normalized observables and their averages [eq 18 of JCTC 2019]]
@@ -22,23 +22,25 @@ function forces_from_averages!(f, aves, Y, theta, sigmas)
 end
 
 """
-    weights_from_forces!(w, g0, f, y)
+    weights_from_forces!(w, G, f, y)
 
 Weights from forces [eq 9 of JCTC 2019] (normalized or original quantities).
+
+G = log w0 are the reference log-weights. 
 
 We iterate three times over the number of weights to calculate 
 (1) log-weights and their maximum from forces,
 (2) non-normalized weights and their norm, and 
 (3) normalized weights. 
 """
-function weights_from_forces!(w, g0, f, y)
+function weights_from_forces!(w, G, f, y)
     max = 0. # to avoid overflow when calcualting exp()
     for alpha in eachindex(w)
         tmp = 0.
         for j in eachindex(f)
             tmp += y[alpha, j]*f[j]
         end    
-        w[alpha] = tmp + g0[alpha]
+        w[alpha] = tmp + G[alpha]
         if w[alpha] > max  # an issue for paralleliztion 
             max = w[alpha]
         end
@@ -144,6 +146,42 @@ function print_info(i, theta, M, f)
 end
 
 """
+    sizes(theta_series, y)
+
+Auxiliary function to get sizes n_thetas, N, M.
+"""
+function sizes(theta_series, y)
+    n_thetas = size(theta_series, 1)
+    N = size(y,1)
+    M = size(y,2)
+    return n_thetas, N, M
+end
+
+"""
+    allocate(N, M)
+
+Auxiliary function to pre-allocate arrays. 
+"""
+function allocate(N, M)
+    w = zeros(N)
+    aves = zeros(M)
+    grad = zeros(M)
+    f = zeros(M) # forces 
+    return w, aves, grad, f
+end 
+
+"""
+    initialize_outout(N, n_thetas)
+
+Auxiliary function to pre-allocate output arrays. 
+"""
+function allocate_output(N, M, n_thetas)
+    ws = zeros((N, n_thetas)) # all optimal weights
+    fs = zeros((M, n_thetas)) # all optimal forces
+    return ws, fs 
+end 
+
+"""
     optimize_series(theta_series, w0, y, Y, method, options)
 
 Optimization for series of theta-values (from large to small). W
@@ -151,22 +189,21 @@ Optimization for series of theta-values (from large to small). W
 We start at reference weigths and corresponding forces.
 Newly optimized forces are used as initial conditions for next smaller value of theta. 
 
+    optimize_series(theta_series, w0, y, Y, method, options, fs_init)
+
+Reoptimize based on previous results 'fs_init' for forces for corresponding theta values.
+
+We use @threads for speed-up of computation. 
+
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
-    w = copy(w0) # we start with a large theta value
-    g0 = log.(w0) # for efficiency reasons
-
-    n_thetas = size(theta_series)[1]
-    N = size(y)[1]
-    M = size(y)[2]
-    
-    aves = zeros(M)
-    grad = zeros(M)
-    f = zeros(M) # forces 
-    ws = zeros((N, n_thetas)) # all optimal weights
-    fs = zeros((M, n_thetas)) # all optimal forces
-    
+    n_thetas, N, M = sizes(theta_series, y)
+    w, aves, grad, f = allocate(N, M)
+    ws, fs = allocate_output(N, M, n_thetas)
     results = []
+
+    w .= w0
+    g0 = log.(w0)
     
     for (i, theta) in enumerate(theta_series)
         Util.averages!(aves, w, y)
@@ -180,6 +217,25 @@ function optimize_series(theta_series, w0, y, Y, method, options)
         fs[:, i] .= f
         print_info(i, theta, M, f)
         push!(results, res)
+    end
+    return ws, fs, results
+end
+
+function optimize_series(theta_series, w0, y, Y, method, options, fs_init)
+    n_thetas, N, M = sizes(theta_series, y)
+    ws, fs = allocate_output(N, M, n_thetas)
+
+    results = Vector{Any}(undef, n_thetas)
+    g0 = log.(w0)   
+    @threads for i in range(1, n_thetas)
+        theta = theta_series[i]
+        w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
+        f .= fs_init[i]
+        res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+        weights_from_forces!(w, g0, f, y)
+        ws[:, i] .= w 
+        fs[:, i] .= f
+        results[i] = deepcopy(res) 
     end
     return ws, fs, results
 end
