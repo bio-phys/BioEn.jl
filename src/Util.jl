@@ -91,9 +91,13 @@ end
 
 BioEn negative log-posterior.
 
+    neg_log_posterior(theta_series::Vector{<:Real}, S::Vector{<:Real}, chi2::Vector{<:Real})
+
+Evaluation for vectors. 
+
     neg_log_posterior(aves, theta, w, w0, Y)
 
-Use pre-calculated averages for efficiency. 
+Calculating chi2 and S. Use pre-calculated averages for efficiency. 
 
 Useful for optimization, wher averages have to be pre-calculated for the objective function
 and its gradient. 
@@ -103,6 +107,14 @@ function neg_log_posterior(theta, S, c2)
     return theta*S + c2/2.
 end
 
+function neg_log_posterior(theta_series::Vector{<:Real}, S::Vector{<:Real}, chi2::Vector{<:Real})
+    n_thetas = size(theta_series, 1)
+    values = zeros(n_thetas)
+    for i in range(1, n_thetas)
+        values[i] = Util.neg_log_posterior(theta_series[i], S[i], chi2[i])
+    end
+    return values
+end
 
 function neg_log_posterior(aves, theta, w, w0, Y)
     S = SKL(w, w0)
