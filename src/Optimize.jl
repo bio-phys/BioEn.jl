@@ -227,11 +227,12 @@ function optimize_series(theta_series, w0, y, Y, method, options, fs_init) # sho
 
     results = Vector{Any}(undef, n_thetas)
     g0 = log.(w0)   
-    @threads for i in Random.shuffle(range(1, n_thetas))
+    for i in Random.shuffle(range(1, n_thetas)) # shuffling the indices is one way to better spread workload on threads
         theta = theta_series[i]
         w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
         f .= fs_init[i]
         res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+        f .= Optim.minimizer(res) 
         weights_from_forces!(w, g0, f, y) # weights should be updated and this line should be superfluous
         ws[:, i] .= w 
         fs[:, i] .= f
