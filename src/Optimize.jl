@@ -8,7 +8,7 @@ o No saving of results during theta-series.
 """
 module Forces
 
-import ..Util, Optim, Random
+import ..Utils, Optim, Random
 using Printf, Base.Threads 
 
 """
@@ -173,7 +173,7 @@ end
 """
     initialize_outout(N, n_thetas)
 
-Auxiliary function to pre-allocate output arrays. 
+Auxiliary function to allocate output arrays. 
 """
 function allocate_output(N, M, n_thetas)
     ws = zeros((N, n_thetas)) # all optimal weights
