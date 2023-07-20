@@ -1,4 +1,4 @@
-module Util
+module Utils
 
 function normalize(Y_org::Array{<:Real,1}, sigmas::Array{<:Real,1})
     Y = copy(Y_org)

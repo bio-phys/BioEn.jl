@@ -87,7 +87,7 @@ at each iteration.
 """
 function weights_and_averages!(w, aves, g0, f, y)
     weights_from_forces!(w, g0, f, y)
-    Util.averages!(aves, w, y)
+    Utils.averages!(aves, w, y)
 end
 
 """
@@ -100,7 +100,7 @@ function optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
     # calculate weights from forces
     function func(f) 
         weights_and_averages!(w, aves, g0, f, y)
-        return Util.neg_log_posterior(aves, theta, w, w0, Y)
+        return Utils.neg_log_posterior(aves, theta, w, w0, Y)
     end
    
     results = Optim.optimize(func, f, method, options)
@@ -123,7 +123,7 @@ function optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
             G .= grad
         end
         if F != nothing
-            return Util.neg_log_posterior(aves, theta, w, w0, Y)
+            return Utils.neg_log_posterior(aves, theta, w, w0, Y)
         end
     end
     
@@ -160,7 +160,7 @@ end
 """
     allocate(N, M)
 
-Auxiliary function to pre-allocate arrays. 
+Auxiliary function to pre-allocate arrays, which are frequently updated. 
 """
 function allocate(N, M)
     w = zeros(N)
@@ -184,16 +184,16 @@ end
 """
     optimize_series(theta_series, w0, y, Y, method, options)
 
-Optimization for series of theta-values (from large to small). W
+Optimization for series of theta-values (from large to small). 
 
-We start at reference weigths and corresponding forces.
+We start at reference weigths and forces that are zero, which is accurate for large theta. 
 Newly optimized forces are used as initial conditions for next smaller value of theta. 
 
     optimize_series(theta_series, w0, y, Y, method, options, fs_init)
 
-Reoptimize based on previous results 'fs_init' for forces for corresponding theta values.
+Reoptimize based on previous results 'fs_init' for forces of corresponding theta values.
 
-We use @threads for speed-up of computation. For large theta, initial forces are close to zero. 
+We use @threads for speed-up of computation. 
 
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
@@ -202,11 +202,11 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     ws, fs = allocate_output(N, M, n_thetas)
     results = []
 
-    w .= w0
-    g0 = log.(w0)
+    w .= w0 # initial value
+    g0 = log.(w0) # pre-computing for efficiency
     
     for (i, theta) in enumerate(theta_series)
-        #Util.averages!(aves, w, y)
+        #Utils.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, theta)
         #res = optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
         res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
@@ -221,12 +221,12 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     return ws, fs, results
 end
 
-function optimize_series(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps loop outside?
+function optimize_series(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps move loop outside?
     n_thetas, N, M = sizes(theta_series, y)
     ws, fs = allocate_output(N, M, n_thetas)
 
     results = Vector{Any}(undef, n_thetas)
-    g0 = log.(w0)   
+    g0 = log.(w0)   # pre-computing for efficiency
     @threads for i in Random.shuffle(range(1, n_thetas)) # shuffling the indices is one way to better spread workload on threads
         theta = theta_series[i]
         w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
@@ -254,7 +254,7 @@ end # module
 #     # evaluate L and its gradient
 #     function func(f) 
 #         weights_and_averages!(w, aves, g0, f, y)
-#         return Util.neg_log_posterior(aves, theta, w, w0, y, Y)
+#         return Utils.neg_log_posterior(aves, theta, w, w0, y, Y)
 #     end
 #     function g!(grad, f)
 #         weights_and_averages!(w, aves, g0, f, y)
