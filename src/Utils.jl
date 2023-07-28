@@ -1,5 +1,16 @@
 module Utils
 
+
+"""
+    normalize(Y_org::Array{T,1}, sigmas::Array{T,1}) where T<:AbstractFloat
+
+Normalize experimental observables by errors sigma.
+
+    function normalize(y_org::Array{T,2}, sigmas::Array{T,1}) where T<:AbstractFloat
+
+Normalize calcualted observables by errors sigma.
+
+"""
 function normalize(Y_org::Array{T,1}, sigmas::Array{T,1}) where T<:AbstractFloat
     Y = copy(Y_org)
     for i in eachindex(Y)
@@ -35,7 +46,7 @@ end
 Discrete relative entropy (Kullback-Leibler divergence).
 """
 function SKL(p::Vector{T}, q::Vector{T}) where T<:AbstractFloat
-    S =  zero(eltype(p))
+    S = zero(T)
     for i in eachindex(p)
         tmp = p[i]/q[i]
         if tmp>eps(0.0) # larger than the numerical zero
@@ -76,7 +87,7 @@ function averages(w::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
 end
 
 """
-    chi2(aves, Y)
+    chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
 
 Chi-squared value for given averages using normalized observabels.
 """
@@ -89,7 +100,7 @@ function chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
 end
 
 """
-    chi2!(aves, w, y, Y)
+    chi2!(aves::Vector{T}, w::Vector{T}, y::Array{T, 2}, Y::Vector{T}) where T<:AbstractFloat
 
 Calculate averages in-place. 
 """
@@ -103,11 +114,11 @@ end
 
 BioEn negative log-posterior.
 
-    neg_log_posterior(theta_series::Vector{<:Real}, S::Vector{<:Real}, chi2::Vector{<:Real})
+    neg_log_posterior(theta_series::Vector{T}, S::Vector{T}, chi2::Vector{T}) where T<:AbstractFloat
 
 Evaluation for vectors. 
 
-    neg_log_posterior(aves, theta, w, w0, Y)
+    neg_log_posterior(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
 
 Calculating chi2 and S. Use pre-calculated averages for efficiency. 
 
@@ -120,8 +131,8 @@ neg_log_posterior(theta, S, c2) = theta*S + c2/2.
 function neg_log_posterior(theta_series::Vector{T}, S::Vector{T}, chi2::Vector{T}) where T<:AbstractFloat
     n_thetas = size(theta_series, 1)
     values = zeros(T, n_thetas)
-    for i in range(1, n_thetas)
-        values[i] = Util.neg_log_posterior(theta_series[i], S[i], chi2[i])
+    for i = range(1, n_thetas)
+        values[i] = neg_log_posterior(theta_series[i], S[i], chi2[i])
     end
     return values
 end
@@ -133,7 +144,7 @@ function neg_log_posterior(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T
 end
 
 """
-    neg_log_posterior!(aves, theta, w, w0, y, Y)
+    nneg_log_posterior!(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
 
 Calculate averages in-place.
 """
@@ -144,11 +155,11 @@ function neg_log_posterior!(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{
 end
 
 """
-    get_S_opt(theta_series, ws, w0)
+    get_S_opt(theta_series::Vector{T}, ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
 
 Relative entropy from 2d array of weights.
 """
-function get_S_opt(theta_series::Vector{T}, ws::Vector{T}, w0::Vector{T}) where T<:AbstractFloat
+function get_S_opt(theta_series::Vector{T}, ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
     n_theta = size(theta_series, 1)
     S_opt = zeros(T, n_theta)
     for i in 1:n_theta
@@ -158,9 +169,11 @@ function get_S_opt(theta_series::Vector{T}, ws::Vector{T}, w0::Vector{T}) where 
 end
 
 """
+    get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
+
 Chi-squared from 2d array of weights for use with normalized observables.
 """
-function get_chi2_opt(theta_series::Vector{T}, ws::Vector{T}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
+function get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
     n_theta = size(theta_series, 1)
     chi2_opt = zeros(T, n_theta)
     aves = zeros(T, size(Y,1))
