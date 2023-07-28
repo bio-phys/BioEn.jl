@@ -73,7 +73,7 @@ Counting of states (integers) in 'sample'.
 function hist(sample, x, density=true)
     counts = StatsBase.counts(sample, x)
     if density
-        return counts./size(sample)[1]
+        return counts./size(sample,1)
     else 
         return counts
     end
@@ -102,8 +102,8 @@ function energy(x, a=3.0, x0=1.0)
 end
 
 function norm(a, x0)
-    val = a*x0^2/2
-    return norm = pi/2*exp(-val)*x0*(besseli(-1/4, val)+besseli(1/4, val))
+    b = a*x0^2/2
+    return norm = pi/2*exp(-b)*x0*(besseli(-1/4, b)+besseli(1/4, b))
 end
 
 """
@@ -115,11 +115,25 @@ function distribution(x, a=3.0, x0=1.0)
     return exp.(-energy(x, a, x0))./norm(a,x0)
 end
 
+"""
+    distribution_max(a=3.0, x0=1.0)
+
+Maximum value of Boltzmann distribution.
+
+"""
 function distribution_max(a=3.0, x0=1.0)
     return 1/norm(a,x0)
 end
 
+"""
+    Grid{T<:Real}
 
+A one-demensional grid (dx, n, x)
+
+    Grid(dx, n)
+
+Intialize grid x from (dx, n).
+"""
 struct Grid{T<:Real}
     dx::T
     n::Int64
@@ -131,12 +145,15 @@ function Grid(dx, n)
 end
 
 """
-    mean_from_distribution(x, p)
+    mean_from_distribution(grid, p; moment=1)
 
-States x = [dx*i for i in range(-n, n)] also serve as observables. 
+States grid.x = [grid.dx*i for i in range(-n, n)] also serve as observables. 
+
+`moment` determines the moment. Default value `momement=1` give the arithmetic mean.
+Use  `momement=0` for norm.
 """
-function mean_from_distribution(grid, p; power=1)
-    return sum(grid.x.^power.*p).*grid.dx
+function mean_from_distribution(grid, p; moment=1)
+    return sum(grid.x.^moment.*p).*grid.dx
 end
 
 function sample(N, half_width=1.5, a=3.0, x0=1.0)
