@@ -12,6 +12,8 @@ import ..Utils, Optim, Random
 using Printf, Base.Threads 
 
 """
+    forces_from_averages!(f, aves, Y, theta)
+
 Normalized forces from normalized observables and their averages [eq 18 of JCTC 2019]]
 """
 function forces_from_averages!(f, aves, Y, theta)
@@ -244,9 +246,7 @@ end
 end # module
 
 
-module LogWeights
-# place holder
-end # module
+
 
 # function optimize!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
 #     # calculate forces
