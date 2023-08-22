@@ -190,13 +190,6 @@ Optimization for series of theta-values (from large to small).
 
 We start at reference weigths and forces that are zero, which is accurate for large theta. 
 Newly optimized forces are used as initial conditions for next smaller value of theta. 
-
-    optimize_series(theta_series, w0, y, Y, method, options, fs_init)
-
-Reoptimize based on previous results 'fs_init' for forces of corresponding theta values.
-
-We use @threads for speed-up of computation. 
-
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
     n_thetas, N, M = sizes(theta_series, y)
@@ -223,7 +216,15 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     return ws, fs, results
 end
 
-function optimize_series(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps move loop outside?
+"""
+    optimize(theta_series, w0, y, Y, method, options, fs_init)
+
+Reoptimize based on previous results 'fs_init' for forces of corresponding theta values.
+
+We use @threads for speed-up of computation. 
+
+"""
+function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps move loop outside?
     n_thetas, N, M = sizes(theta_series, y)
     ws, fs = allocate_output(N, M, n_thetas)
 
