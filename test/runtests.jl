@@ -1,7 +1,6 @@
 using Test
-includet("../src/Util.jl")
 includet("../src/Models.jl")
-includet("../src/Optimize.jl")
+includet("../src/BioEn.jl")
 
 # Input
 n=50
@@ -11,8 +10,8 @@ sigmas = [3.]
 x = range(1,n)
 
 # Model
-u = DoubleWell.energy(x, n)
-p = DoubleWell.distribution(x, n)
+u = DoubleWell.energy(x)
+p = DoubleWell.distribution(x)
 
 # Sampling
 N = 5000
@@ -26,10 +25,10 @@ theta = 1.
 aves = zeros(M)
 f = zeros(M)
 w = zeros(N)
-Util.averages!(aves, w0, y)
-Forces.forces_from_averages!(f, aves, aves, theta, sigmas)
-Forces.weights_from_forces!(w, g0, f, y)
+BioEn.Utils.averages!(aves, w0, y)
+BioEn.Forces.forces_from_averages!(f, aves, aves, theta)
+BioEn.Forces.weights_from_forces!(w, g0, f, y)
 
 @test all((isapprox.(w, w0)).==true)
-S = Util.SKL(w0, w0)
+S = BioEn.Utils.SKL(w0, w0)
 @test isapprox(S, 0.) 
