@@ -8,9 +8,12 @@ o No saving of results during theta-series.
 """
 module LogWeights
 
+import ..Utils, Optim
+using Printf
+
 function weights_from_logweights!(w, g)
     for mu in eachindex(g)
-        w[mu] = exp(g)
+        w[mu] = exp(g[mu])
     end
     w[end] = 1.
     norm = zero(eltype(w))
@@ -24,7 +27,7 @@ end
 
 function logweights_from_weights!(g, w)
     for mu in eachindex(g)
-        g = log(w)
+        g[mu] = log(w[mu])
     end
 end
 
@@ -57,10 +60,10 @@ Auxiliary function to pre-allocate arrays, which are frequently updated.
 function allocate(N, M)
     w = zeros(N)
     g = zeros(N-1) #log-weights
-    G = zeros(N-1) # log of reference weights
+    G0 = zeros(N-1) # log of reference weights
     aves = zeros(M)
     grad = zeros(N-1)
-    return w, g, G, aves, grad
+    return w, g, G0, aves, grad
 end 
 
 """
@@ -83,7 +86,8 @@ objective function and its gradient.
 """
 function optimize_fg!(grad, aves, theta, g, w, w0, G0, G0_ave, y, Y, method, options)
 
-    function fg!(F, G, f)
+    function fg!(F, G, g)
+        weights_from_logweights!(w, g)
         Utils.averages!(aves, w, y)
         if G != nothing
             grad_neg_log_posterior!(grad, g, G0, G0_ave, aves, theta, w, w0, y, Y)
@@ -101,6 +105,31 @@ end
 
 
 """
+    print_info(i, theta)
+
+Auxiliary function for printing information on optimization.
+"""
+function print_info(i, theta)
+    @printf("theta[%05d] = %3.2e", i, theta)
+    @printf("\n")
+    return nothing
+end
+
+
+"""
+    sizes(theta_series, y)
+
+Auxiliary function to get sizes n_thetas, N, M.
+"""
+function sizes(theta_series, y)
+    n_thetas = size(theta_series, 1)
+    N = size(y,1)
+    M = size(y,2)
+    return n_thetas, N, M
+end
+
+
+"""
     optimize_series(theta_series, w0, y, Y, method, options)
 
 Optimization for series of theta-values (from large to small). 
@@ -111,13 +140,13 @@ Newly optimized log-weights are used as initial conditions for next smaller valu
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
     n_thetas, N, M = sizes(theta_series, y)
-    w, g, G, aves, grad = allocate(N, M)
+    w, g, G0, aves, grad = allocate(N, M)
     ws = allocate_output(N, M, n_thetas)
     results = []
 
     w .= w0 # initial value
     logweights_from_weights!(g, w)
-    G0 = log.(w0) # pre-computing for efficiency
+    logweights_from_weights!(G0, w0) # pre-computing for efficiency
     G0_ave = average_log_weights(w, G0)
     
     for (i, theta) in enumerate(theta_series)
@@ -125,7 +154,7 @@ function optimize_series(theta_series, w0, y, Y, method, options)
         g .= Optim.minimizer(res) # added dot to refer to same array
         weights_from_logweights!(w, g) # weights should be updated and this line should be superfluous. Test!
         ws[:, i] .= w 
-        #print_info(i, theta, M, f)
+        print_info(i, theta)
         push!(results, res)
     end
     return ws, results
