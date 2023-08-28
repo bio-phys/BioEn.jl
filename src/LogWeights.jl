@@ -12,14 +12,13 @@ import ..Utils, Optim
 using Printf
 
 function weights_from_logweights!(w, g)
+    norm = zero(eltype(w))
     for mu in eachindex(g)
         w[mu] = exp(g[mu])
-    end
-    w[end] = 1.
-    norm = zero(eltype(w))
-    for mu in eachindex(w)
         norm += w[mu]
     end
+    w[end] = 1.
+    norm += 1.
     for mu in eachindex(w)
         w[mu] /= norm
     end 
