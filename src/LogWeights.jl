@@ -26,7 +26,7 @@ end
 
 function logweights_from_weights!(g, w)
     for mu in eachindex(g)
-        g[mu] = log(w[mu])
+        g[mu] = log(w[mu]/w[end]) # necessary for g[N]==0.
     end
 end
 
