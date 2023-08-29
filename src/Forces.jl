@@ -192,6 +192,7 @@ We start at reference weigths and forces that are zero, which is accurate for la
 Newly optimized forces are used as initial conditions for next smaller value of theta. 
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
+    # todo: test if theta_series is properly sorted
     n_thetas, N, M = sizes(theta_series, y)
     w, aves, grad, f = allocate(N, M)
     ws, fs = allocate_output(N, M, n_thetas)
@@ -241,7 +242,7 @@ function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be 
         fs[:, i] .= f
         results[i] = deepcopy(res) 
     end
-    return ws, fs, results
+    return ws, fs, results # todo: force should not be stored and returned. They can be recalculated from weights.
 end
 
 end # module

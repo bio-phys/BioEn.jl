@@ -24,13 +24,13 @@ function weights_from_logweights!(w, g)
     end 
 end
 
-function logweights_from_weights!(g, w)
+function logweights_from_weights!(g, w) 
     for mu in eachindex(g)
         g[mu] = log(w[mu]/w[end]) # necessary for g[N]==0.
     end
 end
 
-function average_log_weights(w, g) # The name is too specific. The function might be overly complicated. 
+function average_log_weights(w, g) # todo: The name is too specific. The function might be overly complicated. 
     ave = zero(eltype(g))
     for mu in eachindex(g)
         ave += w[mu]*g[mu]
@@ -138,6 +138,7 @@ Newly optimized log-weights are used as initial conditions for next smaller valu
 
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
+    # todo: test if theta_series is properly sorted
     n_thetas, N, M = sizes(theta_series, y)
     w, g, G0, aves, grad = allocate(N, M)
     ws = allocate_output(N, M, n_thetas)
