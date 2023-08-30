@@ -183,4 +183,16 @@ function get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y:
     return chi2_opt
 end
 
+"""
+    sizes(theta_series, y)
+
+Auxiliary function to get sizes n_thetas, N, M.
+"""
+function sizes(theta_series, y)
+    n_thetas = size(theta_series, 1)
+    N = size(y,1)
+    M = size(y,2)
+    return n_thetas, N, M
+end
+
 end # end module 

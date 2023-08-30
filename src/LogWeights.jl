@@ -116,19 +116,6 @@ end
 
 
 """
-    sizes(theta_series, y)
-
-Auxiliary function to get sizes n_thetas, N, M.
-"""
-function sizes(theta_series, y)
-    n_thetas = size(theta_series, 1)
-    N = size(y,1)
-    M = size(y,2)
-    return n_thetas, N, M
-end
-
-
-"""
     optimize_series(theta_series, w0, y, Y, method, options)
 
 Optimization for series of theta-values (from large to small). 
@@ -139,7 +126,7 @@ Newly optimized log-weights are used as initial conditions for next smaller valu
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
     # todo: test if theta_series is properly sorted
-    n_thetas, N, M = sizes(theta_series, y)
+    n_thetas, N, M = Utils.sizes(theta_series, y)
     w, g, G0, aves, grad = allocate(N, M)
     ws = allocate_output(N, M, n_thetas)
     results = []

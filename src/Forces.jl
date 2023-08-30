@@ -148,18 +148,6 @@ function print_info(i, theta, M, f)
 end
 
 """
-    sizes(theta_series, y)
-
-Auxiliary function to get sizes n_thetas, N, M.
-"""
-function sizes(theta_series, y)
-    n_thetas = size(theta_series, 1)
-    N = size(y,1)
-    M = size(y,2)
-    return n_thetas, N, M
-end
-
-"""
     allocate(N, M)
 
 Auxiliary function to pre-allocate arrays, which are frequently updated. 
@@ -193,7 +181,7 @@ Newly optimized forces are used as initial conditions for next smaller value of 
 """
 function optimize_series(theta_series, w0, y, Y, method, options)
     # todo: test if theta_series is properly sorted
-    n_thetas, N, M = sizes(theta_series, y)
+    n_thetas, N, M = Utils.sizes(theta_series, y)
     w, aves, grad, f = allocate(N, M)
     ws, fs = allocate_output(N, M, n_thetas)
     results = []
@@ -226,7 +214,7 @@ We use @threads for speed-up of computation.
 
 """
 function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps move loop outside?
-    n_thetas, N, M = sizes(theta_series, y)
+    n_thetas, N, M = Utils.sizes(theta_series, y)
     ws, fs = allocate_output(N, M, n_thetas)
 
     results = Vector{Any}(undef, n_thetas)
