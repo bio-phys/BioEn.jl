@@ -80,28 +80,28 @@ function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
 end
 
 """
-    weights_and_averages!(w, aves, g0, f, y)
+    weights_and_averages!(w, aves, G0, f, y)
 
 Weights and averages from forces. 
 
 Auxiliarz function for optimization, where we calculate weights and averages from forces
 at each iteration.
 """
-function weights_and_averages!(w, aves, g0, f, y)
-    weights_from_forces!(w, g0, f, y)
+function weights_and_averages!(w, aves, G0, f, y)
+    weights_from_forces!(w, G0, f, y)
     Utils.averages!(aves, w, y)
 end
 
 """
-    optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
+    optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
 
 Optimization with numerical approximation of gradient for testing. 
 """
-function optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
+function optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
     # calculate forces
     # calculate weights from forces
     function func(f) 
-        weights_and_averages!(w, aves, g0, f, y)
+        weights_and_averages!(w, aves, G0, f, y)
         return Utils.neg_log_posterior(aves, theta, w, w0, Y)
     end
    
@@ -110,16 +110,16 @@ function optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
 end
 
 """
-    optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+    optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
 
 Optimization with analytical calculation of gradient. Single function fg!() for evaluation of
 objective function and its gradient. 
 
 """
-function optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+function optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
 
     function fg!(F, G, f)
-        weights_and_averages!(w, aves, g0, f, y)
+        weights_and_averages!(w, aves, G0, f, y)
         if G != nothing
             grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
             G .= grad
@@ -187,16 +187,16 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     results = []
 
     w .= w0 # initial value
-    g0 = log.(w0) # pre-computing for efficiency
+    G0 = log.(w0) # pre-computing for efficiency
     
     for (i, theta) in enumerate(theta_series)
         #Utils.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, theta)
-        #res = optimize_grad_num!(aves, theta, f, w, w0, g0, y, Y, method, options)
-        res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
-        #res = optimize!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+        #res = optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
+        res = optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
+        #res = optimize!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
         f .= Optim.minimizer(res) # added dot to refer to same array
-        weights_from_forces!(w, g0, f, y) # weights should be updated and this line should be superfluous
+        weights_from_forces!(w, G0, f, y) # weights should be updated and this line should be superfluous
         ws[:, i] .= w 
         fs[:, i] .= f
         print_info(i, theta, M, f)
@@ -218,14 +218,14 @@ function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be 
     ws, fs = allocate_output(N, M, n_thetas)
 
     results = Vector{Any}(undef, n_thetas)
-    g0 = log.(w0)   # pre-computing for efficiency
+    G0 = log.(w0)   # pre-computing for efficiency
     @threads for i in Random.shuffle(range(1, n_thetas)) # shuffling the indices is one way to better spread workload on threads
         theta = theta_series[i]
         w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
         f .= fs_init[i]
-        res = optimize_fg!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+        res = optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
         f .= Optim.minimizer(res) 
-        weights_from_forces!(w, g0, f, y) # Just to make sure. Weights should be updated and this line should be superfluous.
+        weights_from_forces!(w, G0, f, y) # Just to make sure. Weights should be updated and this line should be superfluous.
         ws[:, i] .= w 
         fs[:, i] .= f
         results[i] = deepcopy(res) 
@@ -238,16 +238,16 @@ end # module
 
 
 
-# function optimize!(grad, aves, theta, f, w, w0, g0, y, Y, method, options)
+# function optimize!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
 #     # calculate forces
 #     # calculate weights from forces
 #     # evaluate L and its gradient
 #     function func(f) 
-#         weights_and_averages!(w, aves, g0, f, y)
+#         weights_and_averages!(w, aves, G0, f, y)
 #         return Utils.neg_log_posterior(aves, theta, w, w0, y, Y)
 #     end
 #     function g!(grad, f)
-#         weights_and_averages!(w, aves, g0, f, y)
+#         weights_and_averages!(w, aves, G0, f, y)
 #         return grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
 #     end
 #     results = Optim.optimize(func, g!, f, method, options)
