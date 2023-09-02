@@ -28,31 +28,31 @@ end
 
 Weights from forces [eq 9 of JCTC 2019] (normalized or original quantities).
 
-G = log w0 are the reference log-weights. 
+G0 = log w0 are the reference log-weights. 
 
 We iterate three times over the number of weights to calculate 
 (1) log-weights and their maximum from forces,
 (2) non-normalized weights and their norm, and 
 (3) normalized weights. 
 """
-function weights_from_forces!(w, G, f, y)
+function weights_from_forces!(w, G0, f, y)
     max = 0. # to avoid overflow when calcualting exp()
-    for alpha in eachindex(w)
-        tmp = 0.
-        for j in eachindex(f)
-            tmp += y[alpha, j]*f[j]
+    # NxM 
+    for alpha in eachindex(w) # N loop
+        w[alpha] = G0[alpha]
+        for j in eachindex(f) # M loop
+            w[alpha] += y[alpha, j]*f[j]
         end    
-        w[alpha] = tmp + G[alpha]
-        if w[alpha] > max  # an issue for paralleliztion 
+        if w[alpha] > max  # an issue for paralleliztion; not sure if numerically advantageous
             max = w[alpha]
         end
     end
     norm = 0. 
-    for alpha in eachindex(w)
-        w[alpha] = exp(w[alpha]-max)
+    for alpha in eachindex(w) # N loop
+        w[alpha] = exp(w[alpha]-max) 
         norm += w[alpha]
     end
-    w ./= norm
+    w ./= norm # N loop
     return nothing
 end
 
@@ -66,10 +66,11 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
     for k in eachindex(grad)
         grad[k]=0.
-        for alpha in eachindex(w)
+        # NxM 
+        for alpha in eachindex(w) # N loop
             if w[alpha]>eps(0.0) # might be inefficient as we do different things for different entries
                 tmp = theta*(log(w[alpha]/w0[alpha])+1) # we could use pre-calculated entropy contributions of each structure 
-                for i in eachindex(Y)
+                for i in eachindex(Y) # M loop
                     tmp += y[alpha, i]*(aves[i]-Y[i])
                 end
                 grad[k] += tmp*w[alpha]*(y[alpha, k]-aves[k])
