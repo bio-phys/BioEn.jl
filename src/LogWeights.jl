@@ -18,7 +18,7 @@ function weights_from_logweights!(w, g)
         norm += w[mu]
     end
     w[end] = 1.
-    norm += 1.
+    norm += 1. # g[end]=log(w[end])=0.
     for mu in eachindex(w)
         w[mu] /= norm
     end 
@@ -39,8 +39,10 @@ function average_log_weights(w, g) # todo: The name is too specific. The functio
     return ave
 end
 
-function grad_neg_log_posterior!(grad, g, G, G_ave, aves, theta, w, w0, y, Y)
+function grad_neg_log_posterior!(grad, g, G, aves, theta, w, w0, y, Y)
     g_ave = average_log_weights(w, g)
+    G_ave = average_log_weights(w, G)
+
     for mu in eachindex(grad)
         grad[mu]=theta*(g[mu]-g_ave-G[mu]+G_ave)
         for i in eachindex(Y)
@@ -87,9 +89,9 @@ function optimize_fg!(grad, aves, theta, g, w, w0, G0, G0_ave, y, Y, method, opt
 
     function fg!(F, G, g)
         weights_from_logweights!(w, g)
-        Utils.averages!(aves, w, y)
+        Utils.averages!(aves, w, y) 
         if G != nothing
-            grad_neg_log_posterior!(grad, g, G0, G0_ave, aves, theta, w, w0, y, Y)
+            grad_neg_log_posterior!(grad, g, G0, aves, theta, w, w0, y, Y) 
             G .= grad
         end
         if F != nothing
