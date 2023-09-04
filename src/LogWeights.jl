@@ -25,8 +25,9 @@ function weights_from_logweights!(w, g)
 end
 
 function logweights_from_weights!(g, w) 
+    tmp = -log(w[end])
     for mu in eachindex(g)
-        g[mu] = log(w[mu]/w[end]) # necessary for g[N]==0.
+        g[mu] = log(w[mu])+tmp # necessary for g[N]==0; w[end]==1/norm
     end
 end
 
@@ -35,16 +36,17 @@ function average_log_weights(w, g) # todo: The name is too specific. The functio
     for mu in eachindex(g)
         ave += w[mu]*g[mu]
     end
-    # Notet that g[end]=0 
+    # Note that g[end]=0 
     return ave
 end
 
 function grad_neg_log_posterior!(grad, g, G, aves, theta, w, w0, y, Y)
-    g_ave = average_log_weights(w, g)
+    # todo: averages of log-weights should be done in single loop
+    g_ave = average_log_weights(w, g) 
     G_ave = average_log_weights(w, G)
-
+    d_ave = G_ave-g_ave
     for mu in eachindex(grad)
-        grad[mu]=theta*(g[mu]-g_ave-G[mu]+G_ave)
+        grad[mu]=theta*(g[mu]-G[mu]+d_ave)
         for i in eachindex(Y)
             grad[mu] += (aves[i]-Y[i])*(y[mu, i]-aves[i])
         end
@@ -85,7 +87,7 @@ Optimization with analytical calculation of gradient. Single function fg!() for 
 objective function and its gradient. 
 
 """
-function optimize_fg!(grad, aves, theta, g, w, w0, G0, G0_ave, y, Y, method, options)
+function optimize_fg!(grad, aves, theta, g, w, w0, G0, y, Y, method, options)
 
     function fg!(F, G, g)
         weights_from_logweights!(w, g)
@@ -126,7 +128,7 @@ We start at reference weigths, which is accurate for large theta.
 Newly optimized log-weights are used as initial conditions for next smaller value of theta. 
 
 """
-function optimize_series(theta_series, w0, y, Y, method, options)
+function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     # todo: test if theta_series is properly sorted
     n_thetas, N, M = Utils.sizes(theta_series, y)
     w, g, G0, aves, grad = allocate(N, M)
@@ -136,14 +138,15 @@ function optimize_series(theta_series, w0, y, Y, method, options)
     w .= w0 # initial value
     logweights_from_weights!(g, w)
     logweights_from_weights!(G0, w0) # pre-computing for efficiency
-    G0_ave = average_log_weights(w, G0)
     
     for (i, theta) in enumerate(theta_series)
-        res = optimize_fg!(grad, aves, theta, g, w, w0, G0, G0_ave, y, Y, method, options)
+        res = optimize_fg!(grad, aves, theta, g, w, w0, G0, y, Y, method, options)
         g .= Optim.minimizer(res) # added dot to refer to same array
         weights_from_logweights!(w, g) # weights should be updated and this line should be superfluous. Test!
         ws[:, i] .= w 
-        print_info(i, theta)
+        if verbose
+            print_info(i, theta)
+        end
         push!(results, res)
     end
     return ws, results
