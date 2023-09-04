@@ -56,6 +56,22 @@ function weights_from_forces!(w, G0, f, y)
     return nothing
 end
 
+# function weights_from_forces!(w, G0, f, y)
+#     # NxM 
+#     norm = 0. 
+
+#     for alpha in eachindex(w) # N loop
+#         w[alpha] = G0[alpha]
+#         for j in eachindex(f) # M loop
+#             w[alpha] += y[alpha, j]*f[j]
+#         end    
+#         w[alpha] = exp(w[alpha]) 
+#         norm += w[alpha]
+#     end
+#     w ./= norm # N loop
+#     return nothing
+# end
+
 """
     grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
 
@@ -63,18 +79,33 @@ Gradient of the negative log-posterior [eq 20 of JCTC 2019] for normalized force
 
 The averages are pre-calculated for efficiency reasons. The gradient 'grad' is updated. 
 """
-function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
+# function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
+#     for k in eachindex(grad)
+#         grad[k]=0.
+#         # NxM 
+#         for alpha in eachindex(w) # N loop
+#             if w[alpha]>eps(0.0) # might be inefficient as we do different things for different entries
+#                 tmp = theta*(log(w[alpha]/w0[alpha])+1) # we could use pre-calculated entropy contributions of each structure 
+#                 for i in eachindex(Y) # M loop
+#                     tmp += y[alpha, i]*(aves[i]-Y[i])
+#                 end
+#                 grad[k] += tmp*w[alpha]*(y[alpha, k]-aves[k])
+#             end
+#         end
+#     end
+#     return nothing
+# end
+
+function grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)
     for k in eachindex(grad)
         grad[k]=0.
         # NxM 
         for alpha in eachindex(w) # N loop
-            if w[alpha]>eps(0.0) # might be inefficient as we do different things for different entries
-                tmp = theta*(log(w[alpha]/w0[alpha])+1) # we could use pre-calculated entropy contributions of each structure 
-                for i in eachindex(Y) # M loop
-                    tmp += y[alpha, i]*(aves[i]-Y[i])
-                end
-                grad[k] += tmp*w[alpha]*(y[alpha, k]-aves[k])
+            tmp = 0. # we could use pre-calculated entropy contributions of each structure 
+            for i in eachindex(Y) # M loop
+                tmp += y[alpha, i]*(aves[i]-Y[i])
             end
+            grad[k] += (w[alpha]*tmp+theta*(Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1)))*(y[alpha, k]-aves[k])
         end
     end
     return nothing
@@ -122,7 +153,7 @@ function optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
     function fg!(F, G, f)
         weights_and_averages!(w, aves, G0, f, y)
         if G != nothing
-            grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
+            grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)
             G .= grad
         end
         if F != nothing
