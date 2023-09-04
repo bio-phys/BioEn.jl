@@ -1,5 +1,15 @@
 module Utils
 
+function xlogx(x::Number)
+    result = x * log(x)
+    return iszero(x) ? zero(result) : result
+end
+
+function xlogy(x::Number, y::Number)
+    result = x * log(y)
+    return iszero(x) && !isnan(y) ? zero(result) : result
+end
+    
 
 """
     normalize(Y_org::Array{T,1}, sigmas::Array{T,1}) where T<:AbstractFloat
@@ -46,12 +56,9 @@ end
 Discrete relative entropy (Kullback-Leibler divergence).
 """
 function SKL(p::Vector{T}, q::Vector{T}) where T<:AbstractFloat
-    S = zero(T)
-    for i in eachindex(p)
-        tmp = p[i]/q[i]
-        if tmp>eps(0.0) # larger than the numerical zero
-            S += p[i]*log(tmp)
-        end
+    S = 0. #zero(T)
+    for i in eachindex(p) #1:size(p,1) #
+        S += xlogy(p[i], p[i]/q[i]) 
     end
     return S
 end
@@ -64,9 +71,9 @@ Average of calculated observables for given weights
 dim(y) = NxM, where N is the number of samples and M the number of data points. 
 """
 function averages!(aves::Vector{T}, w::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
-    for i in 1:size(y, 2) # observables 
+    for i in 1:size(y, 2) # axes(y,2) # observables 
         aves[i] = 0.
-        for j in 1:size(y, 1)
+        for j in 1:size(y, 1) # axes(y,1) #
             aves[i] += w[j]*y[j,i]
         end
     end
@@ -162,7 +169,7 @@ Relative entropy from 2d array of weights.
 function get_S_opt(theta_series::Vector{T}, ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
     n_theta = size(theta_series, 1)
     S_opt = zeros(T, n_theta)
-    for i in 1:n_theta
+    for i in eachindex(theta_series)  #1:n_theta
         S_opt[i] = SKL(ws[:,i], w0)
     end
     return S_opt
@@ -176,8 +183,8 @@ Chi-squared from 2d array of weights for use with normalized observables.
 function get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
     n_theta = size(theta_series, 1)
     chi2_opt = zeros(T, n_theta)
-    aves = zeros(T, size(Y,1))
-    for i in 1:n_theta
+    aves = zeros(T, size(Y, 1))
+    for i in eachindex(theta_series) #1:n_theta
         chi2_opt[i] = chi2!(aves, ws[:,i], y, Y)
     end
     return chi2_opt
