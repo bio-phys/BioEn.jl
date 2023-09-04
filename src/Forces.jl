@@ -211,7 +211,7 @@ Optimization for series of theta-values (from large to small).
 We start at reference weigths and forces that are zero, which is accurate for large theta. 
 Newly optimized forces are used as initial conditions for next smaller value of theta. 
 """
-function optimize_series(theta_series, w0, y, Y, method, options)
+function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     # todo: test if theta_series is properly sorted
     n_thetas, N, M = Utils.sizes(theta_series, y)
     w, aves, grad, f = allocate(N, M)
@@ -231,7 +231,9 @@ function optimize_series(theta_series, w0, y, Y, method, options)
         weights_from_forces!(w, G0, f, y) # weights should be updated and this line should be superfluous
         ws[:, i] .= w 
         fs[:, i] .= f
-        print_info(i, theta, M, f)
+        if verbose
+            print_info(i, theta, M, f)
+        end
         push!(results, res)
     end
     return ws, fs, results
