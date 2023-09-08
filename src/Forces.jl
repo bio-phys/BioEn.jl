@@ -6,6 +6,7 @@ o No calculation of quantities that can be recalculated afterwards.
 o No calculation of quantities for monitoring the progress. 
 o No saving of results during theta-series. 
 """
+# todo: 'G0' should be replaced by 'logw0'; has nothing to do with log-weights method
 module Forces
 
 import ..Utils, Optim, Random
@@ -56,21 +57,21 @@ function weights_from_forces!(w, G0, f, y)
     return nothing
 end
 
-# function weights_from_forces!(w, G0, f, y)
-#     # NxM 
-#     norm = 0. 
+function weights_from_forces_2!(w, G0, f, y) # slower than original!!!
+    # NxM 
+    norm = 0. 
 
-#     for alpha in eachindex(w) # N loop
-#         w[alpha] = G0[alpha]
-#         for j in eachindex(f) # M loop
-#             w[alpha] += y[alpha, j]*f[j]
-#         end    
-#         w[alpha] = exp(w[alpha]) 
-#         norm += w[alpha]
-#     end
-#     w ./= norm # N loop
-#     return nothing
-# end
+    for alpha in eachindex(w) # N loop
+        w[alpha] = G0[alpha]
+        for j in eachindex(f) # M loop
+            w[alpha] += y[alpha, j]*f[j]
+        end    
+        w[alpha] = exp(w[alpha]) 
+        norm += w[alpha]
+    end
+    w ./= norm # N loop
+    return nothing
+end
 
 """
     grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
@@ -79,7 +80,7 @@ Gradient of the negative log-posterior [eq 20 of JCTC 2019] for normalized force
 
 The averages are pre-calculated for efficiency reasons. The gradient 'grad' is updated. 
 """
-# function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
+# function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y) # don't forget to change G0->w0 when switching
 #     for k in eachindex(grad)
 #         grad[k]=0.
 #         # NxM 
@@ -96,20 +97,64 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 #     return nothing
 # end
 
+# function grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)# don't forget to change w0->G0 when switching
+#     for k in eachindex(grad) # M loop
+#         grad[k]=0.
+#         # NxM 
+#         for alpha in eachindex(w) # N loop
+#             tmp = 0. # we could use pre-calculated entropy contributions of each structure 
+#             for i in eachindex(Y) # M loop
+#                 tmp += y[alpha, i]*(aves[i]-Y[i])
+#             end
+#             grad[k] += (w[alpha]*tmp+theta*(Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1)))*(y[alpha, k]-aves[k])
+#         end
+#     end
+#     return nothing
+# end
+
+# function grad_neg_log_posterior_2!(grad, aves, theta, w, G0, y, Y, dummy)
+#     # dObs = similar(Y)
+#     # for i in eachindex(Y)
+#     #     dObs[i] = (aves[i]-Y[i])
+#     # end
+#     for alpha in eachindex(w) # N loop
+#         tmp = zero(eltype(y)) # we could use pre-calculated entropy contributions of each structure 
+#         for i in eachindex(Y) # M loop
+#             tmp += y[alpha, i]*(aves[i]-Y[i]) # one can pre-calculate dObs[i] = (aves[i]-Y[i])  
+#         end
+#         dummy[alpha] = (w[alpha]*tmp + theta*( Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1) ) )
+#     end
+#     for k in eachindex(grad) # M loop
+#         grad[k] = 0.
+#         for alpha in eachindex(w) 
+#             grad[k] += dummy[alpha]*(y[alpha, k]-aves[k])
+#         end
+#     end
+#     return nothing
+# end
+
+# function grad_neg_log_posterior_2!(grad, aves, theta, w, G0, y, Y)
+#     dummy = similar(w)
+#     grad_neg_log_posterior_2!(grad, aves, theta, w, G0, y, Y, dummy)
+#     return nothing
+# end
+
 function grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)
-    for k in eachindex(grad)
-        grad[k]=0.
-        # NxM 
-        for alpha in eachindex(w) # N loop
-            tmp = 0. # we could use pre-calculated entropy contributions of each structure 
-            for i in eachindex(Y) # M loop
-                tmp += y[alpha, i]*(aves[i]-Y[i])
-            end
-            grad[k] += (w[alpha]*tmp+theta*(Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1)))*(y[alpha, k]-aves[k])
+    grad .= 0.
+    for alpha in eachindex(w) # N loop
+        tmp = zero(eltype(y)) # we could use pre-calculated entropy contributions of each structure 
+        for i in eachindex(Y) # M loop
+            tmp += y[alpha, i]*(aves[i]-Y[i]) # one can pre-calculate dObs[i] = (aves[i]-Y[i])  
         end
-    end
+        tmp = (w[alpha]*tmp + theta*( Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1) ) )
+    
+        for k in eachindex(grad) # M loop
+            grad[k] += tmp*(y[alpha, k]-aves[k])
+        end
+    end    
     return nothing
 end
+
 
 """
     weights_and_averages!(w, aves, G0, f, y)
