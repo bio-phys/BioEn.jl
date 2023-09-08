@@ -22,7 +22,7 @@ Normalize calcualted observables by errors sigma.
 
 """
 function normalize(Y_org::Array{T,1}, sigmas::Array{T,1}) where T<:AbstractFloat
-    Y = copy(Y_org)
+    Y = similar(Y_org)
     for i in eachindex(Y)
         Y[i] /= sigmas[i]
     end
@@ -30,7 +30,7 @@ function normalize(Y_org::Array{T,1}, sigmas::Array{T,1}) where T<:AbstractFloat
 end
 
 function normalize(y_org::Array{T,2}, sigmas::Array{T,1}) where T<:AbstractFloat
-    y = copy(y_org)
+    y = similar(y_org)
     for j in 1:size(y, 2)
         for i in 1:size(y, 1)
             y[i, j] /= sigmas[j]
