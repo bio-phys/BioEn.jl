@@ -105,15 +105,6 @@ function averages(w::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
     return aves
 end
 
-
-function average(w::Vector{T}, g::Vector{T})  where T<:AbstractFloat
-    ave = zero(T)
-    for mu in eachindex(g) # Note that g[end]=0, where g are log-weights
-        ave += w[mu]*g[mu]
-    end
-    return ave
-end
-
 """
     chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
 

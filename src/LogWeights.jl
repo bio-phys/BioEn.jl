@@ -12,6 +12,14 @@ module LogWeights
 import ..Utils, Optim
 using Printf
 
+function average(w::Vector{T}, g::Vector{T})  where T<:AbstractFloat
+    ave = zero(T)
+    for mu in eachindex(g) # Note that g[end]=0, where g are log-weights
+        ave += w[mu]*g[mu]
+    end
+    return ave
+end
+
 function weights_from_logweights!(w, g)
     norm = zero(eltype(w))
     max = maximum(g)
@@ -34,7 +42,7 @@ function logweights_from_weights!(g, w) # for w=1/N, all log-weights are zero!
 end
 
 function grad_neg_log_posterior!(grad, g, G, aves, theta, w, w0, y, Y)
-    d_ave = Utils.average(w, G) - Utils.average(w, g) 
+    d_ave = average(w, G) - average(w, g) 
     for mu in eachindex(grad)
         grad[mu]=theta*(g[mu] - G[mu] + d_ave)
         for i in eachindex(Y)
