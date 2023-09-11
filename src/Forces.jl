@@ -5,8 +5,8 @@ The code should be as slim as possible:
 o No calculation of quantities that can be recalculated afterwards. 
 o No calculation of quantities for monitoring the progress. 
 o No saving of results during theta-series. 
+o N>>M
 """
-# todo: 'G0' should be replaced by 'logw0'; has nothing to do with log-weights method
 module Forces
 
 import ..Utils, Optim, Random
@@ -29,18 +29,18 @@ end
 
 Weights from forces [eq 9 of JCTC 2019] (normalized or original quantities).
 
-G0 = log w0 are the reference log-weights. 
+logw0 = log w0 are the reference log-weights. 
 
 We iterate three times over the number of weights to calculate 
 (1) log-weights and their maximum from forces,
 (2) non-normalized weights and their norm, and 
 (3) normalized weights. 
 """
-function weights_from_forces!(w, G0, f, y)
+function weights_from_forces!(w, logw0, f, y)
     max = 0. # to avoid overflow when calcualting exp()
     # NxM 
     for alpha in eachindex(w) # N loop
-        w[alpha] = G0[alpha]
+        w[alpha] = logw0[alpha]
         for j in eachindex(f) # M loop
             w[alpha] += y[alpha, j]*f[j]
         end    
@@ -57,12 +57,12 @@ function weights_from_forces!(w, G0, f, y)
     return nothing
 end
 
-function weights_from_forces_2!(w, G0, f, y) # slower than original!!!
+function weights_from_forces_2!(w, logw0, f, y) # slower than original!!!
     # NxM 
     norm = 0. 
 
     for alpha in eachindex(w) # N loop
-        w[alpha] = G0[alpha]
+        w[alpha] = logw0[alpha]
         for j in eachindex(f) # M loop
             w[alpha] += y[alpha, j]*f[j]
         end    
@@ -80,7 +80,7 @@ Gradient of the negative log-posterior [eq 20 of JCTC 2019] for normalized force
 
 The averages are pre-calculated for efficiency reasons. The gradient 'grad' is updated. 
 """
-# function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y) # don't forget to change G0->w0 when switching
+# function grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y) # don't forget to change logw0->w0 when switching
 #     for k in eachindex(grad)
 #         grad[k]=0.
 #         # NxM 
@@ -97,7 +97,7 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 #     return nothing
 # end
 
-# function grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)# don't forget to change w0->G0 when switching
+# function grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)# don't forget to change w0->logw0 when switching
 #     for k in eachindex(grad) # M loop
 #         grad[k]=0.
 #         # NxM 
@@ -106,13 +106,13 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 #             for i in eachindex(Y) # M loop
 #                 tmp += y[alpha, i]*(aves[i]-Y[i])
 #             end
-#             grad[k] += (w[alpha]*tmp+theta*(Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1)))*(y[alpha, k]-aves[k])
+#             grad[k] += (w[alpha]*tmp+theta*(Utils.xlogx(w[alpha])-w[alpha]*(logw0[alpha]-1)))*(y[alpha, k]-aves[k])
 #         end
 #     end
 #     return nothing
 # end
 
-# function grad_neg_log_posterior_2!(grad, aves, theta, w, G0, y, Y, dummy)
+# function grad_neg_log_posterior_2!(grad, aves, theta, w, logw0, y, Y, dummy)
 #     # dObs = similar(Y)
 #     # for i in eachindex(Y)
 #     #     dObs[i] = (aves[i]-Y[i])
@@ -122,7 +122,7 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 #         for i in eachindex(Y) # M loop
 #             tmp += y[alpha, i]*(aves[i]-Y[i]) # one can pre-calculate dObs[i] = (aves[i]-Y[i])  
 #         end
-#         dummy[alpha] = (w[alpha]*tmp + theta*( Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1) ) )
+#         dummy[alpha] = (w[alpha]*tmp + theta*( Utils.xlogx(w[alpha])-w[alpha]*(logw0[alpha]-1) ) )
 #     end
 #     for k in eachindex(grad) # M loop
 #         grad[k] = 0.
@@ -133,20 +133,20 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 #     return nothing
 # end
 
-# function grad_neg_log_posterior_2!(grad, aves, theta, w, G0, y, Y)
+# function grad_neg_log_posterior_2!(grad, aves, theta, w, logw0, y, Y)
 #     dummy = similar(w)
-#     grad_neg_log_posterior_2!(grad, aves, theta, w, G0, y, Y, dummy)
+#     grad_neg_log_posterior_2!(grad, aves, theta, w, logw0, y, Y, dummy)
 #     return nothing
 # end
 
-function grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)
+function grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)
     grad .= 0.
     for alpha in eachindex(w) # N loop
         tmp = zero(eltype(y)) # we could use pre-calculated entropy contributions of each structure 
         for i in eachindex(Y) # M loop
             tmp += y[alpha, i]*(aves[i]-Y[i]) # one can pre-calculate dObs[i] = (aves[i]-Y[i])  
         end
-        tmp = (w[alpha]*tmp + theta*( Utils.xlogx(w[alpha])-w[alpha]*(G0[alpha]-1) ) )
+        tmp = (w[alpha]*tmp + theta*( Utils.xlogx(w[alpha])-w[alpha]*(logw0[alpha]-1) ) )
     
         for k in eachindex(grad) # M loop
             grad[k] += tmp*(y[alpha, k]-aves[k])
@@ -157,28 +157,28 @@ end
 
 
 """
-    weights_and_averages!(w, aves, G0, f, y)
+    weights_and_averages!(w, aves, logw0, f, y)
 
 Weights and averages from forces. 
 
 Auxiliarz function for optimization, where we calculate weights and averages from forces
 at each iteration.
 """
-function weights_and_averages!(w, aves, G0, f, y)
-    weights_from_forces!(w, G0, f, y)
+function weights_and_averages!(w, aves, logw0, f, y)
+    weights_from_forces!(w, logw0, f, y)
     Utils.averages!(aves, w, y)
 end
 
 """
-    optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
+    optimize_grad_num!(aves, theta, f, w, w0, logw0, y, Y, method, options)
 
 Optimization with numerical approximation of gradient for testing. 
 """
-function optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
+function optimize_grad_num!(aves, theta, f, w, w0, logw0, y, Y, method, options)
     # calculate forces
     # calculate weights from forces
     function func(f) 
-        weights_and_averages!(w, aves, G0, f, y)
+        weights_and_averages!(w, aves, logw0, f, y)
         return Utils.neg_log_posterior(aves, theta, w, w0, Y)
     end
    
@@ -187,18 +187,18 @@ function optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
 end
 
 """
-    optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
+    optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
 
 Optimization with analytical calculation of gradient. Single function fg!() for evaluation of
 objective function and its gradient. 
 
 """
-function optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
+function optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
 
     function fg!(F, G, f)
-        weights_and_averages!(w, aves, G0, f, y)
+        weights_and_averages!(w, aves, logw0, f, y)
         if G != nothing
-            grad_neg_log_posterior!(grad, aves, theta, w, G0, y, Y)
+            grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)
             G .= grad
         end
         if F != nothing
@@ -264,16 +264,16 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     results = []
 
     w .= w0 # initial value
-    G0 = log.(w0) # pre-computing for efficiency
+    logw0 = log.(w0) # pre-computing for efficiency
     
     for (i, theta) in enumerate(theta_series)
         #Utils.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, theta)
-        #res = optimize_grad_num!(aves, theta, f, w, w0, G0, y, Y, method, options)
-        res = optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
-        #res = optimize!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
+        #res = optimize_grad_num!(aves, theta, f, w, w0, logw0, y, Y, method, options)
+        res = optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
+        #res = optimize!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
         f .= Optim.minimizer(res) # added dot to refer to same array
-        weights_from_forces!(w, G0, f, y) # weights should be updated and this line should be superfluous
+        weights_from_forces!(w, logw0, f, y) # weights should be updated and this line should be superfluous
         ws[:, i] .= w 
         fs[:, i] .= f
         if verbose
@@ -297,14 +297,14 @@ function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be 
     ws, fs = allocate_output(N, M, n_thetas)
 
     results = Vector{Any}(undef, n_thetas)
-    G0 = log.(w0)   # pre-computing for efficiency
+    logw0 = log.(w0)   # pre-computing for efficiency
     @threads for i in Random.shuffle(range(1, n_thetas)) # shuffling the indices is one way to better spread workload on threads
         theta = theta_series[i]
         w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
         f .= fs_init[i]
-        res = optimize_fg!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
+        res = optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
         f .= Optim.minimizer(res) 
-        weights_from_forces!(w, G0, f, y) # Just to make sure. Weights should be updated and this line should be superfluous.
+        weights_from_forces!(w, logw0, f, y) # Just to make sure. Weights should be updated and this line should be superfluous.
         ws[:, i] .= w 
         fs[:, i] .= f
         results[i] = deepcopy(res) 
@@ -317,16 +317,16 @@ end # module
 
 
 
-# function optimize!(grad, aves, theta, f, w, w0, G0, y, Y, method, options)
+# function optimize!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
 #     # calculate forces
 #     # calculate weights from forces
 #     # evaluate L and its gradient
 #     function func(f) 
-#         weights_and_averages!(w, aves, G0, f, y)
+#         weights_and_averages!(w, aves, logw0, f, y)
 #         return Utils.neg_log_posterior(aves, theta, w, w0, y, Y)
 #     end
 #     function g!(grad, f)
-#         weights_and_averages!(w, aves, G0, f, y)
+#         weights_and_averages!(w, aves, logw0, f, y)
 #         return grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
 #     end
 #     results = Optim.optimize(func, g!, f, method, options)
