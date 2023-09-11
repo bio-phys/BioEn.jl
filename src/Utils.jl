@@ -105,6 +105,15 @@ function averages(w::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
     return aves
 end
 
+
+function average(w::Vector{T}, g::Vector{T})  where T<:AbstractFloat
+    ave = zero(T)
+    for mu in eachindex(g) # Note that g[end]=0, where g are log-weights
+        ave += w[mu]*g[mu]
+    end
+    return ave
+end
+
 """
     chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
 
@@ -162,8 +171,14 @@ function neg_log_posterior(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T
     return neg_log_posterior(theta, S, c2)
 end
 
+function neg_log_posterior(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T}, logw0::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
+    S = SKL(w, w0, logw0)
+    c2 = chi2(aves, Y)
+    return neg_log_posterior(theta, S, c2)
+end
+
 """
-    nneg_log_posterior!(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
+    neg_log_posterior!(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{T}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
 
 Calculate averages in-place.
 """
