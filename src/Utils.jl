@@ -54,11 +54,23 @@ end
     SKL(p::Vector{T}, q::Vector{T}) where T<:AbstractFloat
 
 Discrete relative entropy (Kullback-Leibler divergence).
+
+    SKL(p::Vector{T}, q::Vector{T}, logq::Vector{T}) where T<:AbstractFloat
+
+Pre-calculated `logq' = log(w0) for increased efficiency. 
 """
 function SKL(p::Vector{T}, q::Vector{T}) where T<:AbstractFloat
-    S = 0. #zero(T)
+    S = zero(T)
     for i in eachindex(p) #1:size(p,1) #
         S += xlogy(p[i], p[i]/q[i]) 
+    end
+    return S
+end
+
+function SKL(p::Vector{T}, q::Vector{T}, logq::Vector{T}) where T<:AbstractFloat
+    S = zero(T)
+    for i in eachindex(p) #1:size(p,1) #
+        S += xlogx(p[i])-logq[i] 
     end
     return S
 end
@@ -71,9 +83,9 @@ Average of calculated observables for given weights
 dim(y) = NxM, where N is the number of samples and M the number of data points. 
 """
 function averages!(aves::Vector{T}, w::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
-    for i in 1:size(y, 2) # axes(y,2) # observables 
+    for i in axes(y,2) # observables 
         aves[i] = 0.
-        for j in 1:size(y, 1) # axes(y,1) #
+        for j in axes(y,1) #
             aves[i] += w[j]*y[j,i]
         end
     end
