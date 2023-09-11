@@ -5,6 +5,7 @@ The code should be as slim as possible:
 o No calculation of quantities that can be recalculated afterwards. 
 o No calculation of quantities for monitoring the progress. 
 o No saving of results during theta-series. 
+o N>>M
 """
 module LogWeights
 
@@ -65,7 +66,6 @@ function allocate(N, M)
     g = zeros(N-1) #log-weights
     G0 = zeros(N-1) # log of reference weights
     aves = zeros(M)
-    grad = zeros(N-1)
     return w, g, G0, aves, grad
 end 
 
@@ -87,14 +87,32 @@ Optimization with analytical calculation of gradient. Single function fg!() for 
 objective function and its gradient. 
 
 """
-function optimize_fg!(grad, aves, theta, g, w, w0, G0, y, Y, method, options)
+# function optimize_fg!(grad, aves, theta, g, w, w0, G0, y, Y, method, options)
+
+#     function fg!(F, G, g)
+#         weights_from_logweights!(w, g)
+#         Utils.averages!(aves, w, y) 
+#         if G != nothing
+#             grad_neg_log_posterior!(grad, g, G0, aves, theta, w, w0, y, Y) 
+#             G .= grad
+#         end
+#         if F != nothing
+#             return Utils.neg_log_posterior(aves, theta, w, w0, Y)
+#         end
+#     end
+    
+#     results = Optim.optimize(Optim.only_fg!(fg!), g, method, options)
+    
+#     return results
+# end
+
+function optimize_fg!(aves, theta, g, w, w0, G0, y, Y, method, options)
 
     function fg!(F, G, g)
         weights_from_logweights!(w, g)
         Utils.averages!(aves, w, y) 
         if G != nothing
-            grad_neg_log_posterior!(grad, g, G0, aves, theta, w, w0, y, Y) 
-            G .= grad
+            grad_neg_log_posterior!(G, g, G0, aves, theta, w, w0, y, Y) 
         end
         if F != nothing
             return Utils.neg_log_posterior(aves, theta, w, w0, Y)
@@ -131,7 +149,7 @@ Newly optimized log-weights are used as initial conditions for next smaller valu
 function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     # todo: test if theta_series is properly sorted
     n_thetas, N, M = Utils.sizes(theta_series, y)
-    w, g, G0, aves, grad = allocate(N, M)
+    w, g, G0, aves = allocate(N, M)
     ws = allocate_output(N, M, n_thetas)
     results = []
 
@@ -140,7 +158,7 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     logweights_from_weights!(G0, w0) # pre-computing for efficiency
     
     for (i, theta) in enumerate(theta_series)
-        res = optimize_fg!(grad, aves, theta, g, w, w0, G0, y, Y, method, options)
+        res = optimize_fg!(aves, theta, g, w, w0, G0, y, Y, method, options)
         g .= Optim.minimizer(res) # added dot to refer to same array
         weights_from_logweights!(w, g) # weights should be updated and this line should be superfluous. Test!
         ws[:, i] .= w 
