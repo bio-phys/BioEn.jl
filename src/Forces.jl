@@ -193,13 +193,12 @@ Optimization with analytical calculation of gradient. Single function fg!() for 
 objective function and its gradient. 
 
 """
-function optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
+function optimize_fg!(aves, theta, f, w, w0, logw0, y, Y, method, options)
 
     function fg!(F, G, f)
         weights_and_averages!(w, aves, logw0, f, y)
         if G != nothing
-            grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)
-            G .= grad
+            grad_neg_log_posterior!(G, aves, theta, w, logw0, y, Y)
         end
         if F != nothing
             return Utils.neg_log_posterior(aves, theta, w, w0, Y)
@@ -232,9 +231,8 @@ Auxiliary function to pre-allocate arrays, which are frequently updated.
 function allocate(N, M)
     w = zeros(N)
     aves = zeros(M)
-    grad = zeros(M)
     f = zeros(M) # forces 
-    return w, aves, grad, f
+    return w, aves, f
 end 
 
 """
@@ -259,7 +257,7 @@ Newly optimized forces are used as initial conditions for next smaller value of 
 function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     # todo: test if theta_series is properly sorted
     n_thetas, N, M = Utils.sizes(theta_series, y)
-    w, aves, grad, f = allocate(N, M)
+    w, aves, f = allocate(N, M)
     ws, fs = allocate_output(N, M, n_thetas)
     results = []
 
@@ -270,7 +268,7 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
         #Utils.averages!(aves, w, y)
         #Forces.forces_from_averages!(f, aves, Y, theta)
         #res = optimize_grad_num!(aves, theta, f, w, w0, logw0, y, Y, method, options)
-        res = optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
+        res = optimize_fg!(aves, theta, f, w, w0, logw0, y, Y, method, options)
         #res = optimize!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
         f .= Optim.minimizer(res) # added dot to refer to same array
         weights_from_forces!(w, logw0, f, y) # weights should be updated and this line should be superfluous
@@ -300,9 +298,9 @@ function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be 
     logw0 = log.(w0)   # pre-computing for efficiency
     @threads for i in Random.shuffle(range(1, n_thetas)) # shuffling the indices is one way to better spread workload on threads
         theta = theta_series[i]
-        w, aves, grad, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
+        w, aves, f = allocate(N, M) # each thread is independent (aves, w, grad, f)
         f .= fs_init[i]
-        res = optimize_fg!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
+        res = optimize_fg!(aves, theta, f, w, w0, logw0, y, Y, method, options)
         f .= Optim.minimizer(res) 
         weights_from_forces!(w, logw0, f, y) # Just to make sure. Weights should be updated and this line should be superfluous.
         ws[:, i] .= w 
