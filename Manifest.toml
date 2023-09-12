@@ -2,7 +2,7 @@
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "8306c05ca5a0316a55ac800cab04ea658c708810"
+project_hash = "d9084a6a4195d5145096a6b968686359af077704"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -97,6 +97,12 @@ version = "0.18.15"
 [[deps.Dates]]
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+
+[[deps.DelimitedFiles]]
+deps = ["Mmap"]
+git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
+uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+version = "1.9.1"
 
 [[deps.DiffResults]]
 deps = ["StaticArraysCore"]
@@ -257,6 +263,9 @@ deps = ["DataAPI"]
 git-tree-sha1 = "f66bdc5de519e8f8ae43bdc598782d35a25b1272"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
 version = "1.1.0"
+
+[[deps.Mmap]]
+uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
