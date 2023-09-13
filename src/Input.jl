@@ -1,3 +1,9 @@
+"""
+Reading in input data for BioEn refinement. 
+
+Input data consists of (experimental) data, calculated observables, and optionally reference weights. 
+"""
+#todo: errors should be provided optionally 
 module Input
 
 using DelimitedFiles #, HDF5
@@ -5,7 +11,7 @@ using DelimitedFiles #, HDF5
 
 ## txt files
 
-function consistent_shapes(Y::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
+function have_consistent_sizes(Y::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
     MY = size(Y,1)
     My = size(y, 2) 
     MY == My && return true
@@ -14,7 +20,7 @@ function consistent_shapes(Y::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
     return false
 end
 
-function consistent_shapes(y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+function have_consistent_sizes(y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
     Ny = size(y,1)
     Nw0 = size(w0, 1)
     (Ny == Nw0 || w0==[]) && return true
@@ -22,8 +28,8 @@ function consistent_shapes(y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
     return false
 end
 
-function consistent_shapes(Y::Vector{T}, y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
-    return consistent_shapes(Y, y) && consistent_shapes(y, w0) 
+function have_consistent_sizes(Y::Vector{T}, y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+    return have_consistent_sizes(Y, y) && have_consistent_sizes(y, w0) 
 end
 
 # function consistent_eltype()???
@@ -65,7 +71,7 @@ end
 function write_txt_normalized(path; Y_name, Y, y_name, y, w0_name="", w0=[])
     #todo: check shapes before writing
     try 
-        consistent_shapes(Y, y, w0) 
+        have_consistent_sizes(Y, y, w0) 
         println("Writing files to path \"$path\".\n")
         println("Writing data to file \"$Y_name\".")
         write_txt(path*Y_name, Y)
