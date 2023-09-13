@@ -6,7 +6,7 @@ module BioEn
 include("./Utils.jl")
 include("./Forces.jl")
 include("./LogWeights.jl")
-include("./InputOutput.jl")
+include("./Input.jl")
 
 
 

@@ -1,4 +1,4 @@
-module InputOutput 
+module Input
 
 using DelimitedFiles #, HDF5
 # input
