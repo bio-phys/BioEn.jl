@@ -240,10 +240,10 @@ end
 
 Auxiliary function to allocate output arrays. 
 """
-function allocate_output(N, M, n_thetas)
-    ws = zeros((N, n_thetas)) # all optimal weights
+function allocate_output(M, n_thetas)
+    #ws = zeros((N, n_thetas)) # all optimal weights
     fs = zeros((M, n_thetas)) # all optimal forces
-    return ws, fs 
+    return fs 
 end 
 
 """
@@ -258,7 +258,7 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     # todo: test if theta_series is properly sorted
     n_thetas, N, M = Utils.sizes(theta_series, y)
     w, aves, f = allocate(N, M)
-    ws, fs = allocate_output(N, M, n_thetas)
+    fs = allocate_output(M, n_thetas)
     results = []
 
     w .= w0 # initial value
@@ -272,14 +272,13 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
         #res = optimize!(grad, aves, theta, f, w, w0, logw0, y, Y, method, options)
         f .= Optim.minimizer(res) # added dot to refer to same array
         weights_from_forces!(w, logw0, f, y) # weights should be updated and this line should be superfluous
-        ws[:, i] .= w 
         fs[:, i] .= f
         if verbose
             print_info(i, theta, M, f)
         end
         push!(results, res)
     end
-    return ws, fs, results
+    return fs, results
 end
 
 """
@@ -292,7 +291,7 @@ We use @threads for speed-up of computation.
 """
 function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be named differently; perhaps move loop outside?
     n_thetas, N, M = Utils.sizes(theta_series, y)
-    ws, fs = allocate_output(N, M, n_thetas)
+    fs = allocate_output(N, n_thetas)
 
     results = Vector{Any}(undef, n_thetas)
     logw0 = log.(w0)   # pre-computing for efficiency
@@ -303,15 +302,21 @@ function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be 
         res = optimize_fg!(aves, theta, f, w, w0, logw0, y, Y, method, options)
         f .= Optim.minimizer(res) 
         weights_from_forces!(w, logw0, f, y) # Just to make sure. Weights should be updated and this line should be superfluous.
-        ws[:, i] .= w 
         fs[:, i] .= f
         results[i] = deepcopy(res) 
     end
-    return ws, fs, results # todo: force should not be stored and returned. They can be recalculated from weights.
+    return fs, results # todo: force should not be stored and returned. They can be recalculated from weights.
+end
+
+function refined_weights(fs, logw0, y)
+    ws = zeros(size(y,1), size(fs,2))
+    for i in axes(fs, 2)
+        weights_from_forces!(@view(ws[:,i]), logw0, @view(fs[:,i]), y)
+    end
+    return ws
 end
 
 end # module
-
 
 
 
