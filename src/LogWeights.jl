@@ -71,8 +71,8 @@ end
 
 Auxiliary function to allocate output arrays. 
 """
-function allocate_output(N, M, n_thetas)
-    ws = zeros((N, n_thetas)) # all optimal weights
+function allocate_output(N, n_thetas)
+    gs = zeros((N-1, n_thetas)) # all optimal weights
     return ws
 end 
 
@@ -146,7 +146,7 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     # todo: test if theta_series is properly sorted
     n_thetas, N, M = Utils.sizes(theta_series, y)
     w, g, G, aves = allocate(N, M)
-    ws = allocate_output(N, M, n_thetas)
+    gs = allocate_output(N, n_thetas)
     results = []
 
     w .= w0 # initial value
@@ -157,13 +157,21 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
         res = optimize_fg!(aves, theta, g, w, w0, G, y, Y, method, options)
         g .= Optim.minimizer(res) # added dot to refer to same array
         weights_from_logweights!(w, g) # weights should be updated and this line should be superfluous. Test!
-        ws[:, i] .= w 
+        gs[:, i] .= g 
         if verbose
             print_info(i, theta)
         end
         push!(results, res)
     end
-    return ws, results
+    return gs, results
+end
+
+function refined_weights(gs)
+    ws = zeros(size(gs,1)+1, size(gs,2))
+    for i in axes(gs, 2)
+        weights_from_logweights!(@view(ws[:,i]), @view(gs[:,i])) 
+    end
+    return ws
 end
 
 
