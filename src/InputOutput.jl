@@ -5,6 +5,29 @@ using DelimitedFiles #, HDF5
 
 ## txt files
 
+function consistent_shapes(Y::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
+    MY = size(Y,1)
+    My = size(y, 2) 
+    MY == My && return true
+    #error("Shapes of data (M=$MY) and calculated observables (M=$My) are not consistent!")
+    throw("Shapes of data (M=$MY) and calculated observables (M=$My) are not consistent!")
+    return false
+end
+
+function consistent_shapes(y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+    Ny = size(y,1)
+    Nw0 = size(w0, 1)
+    (Ny == Nw0 || w0==[]) && return true
+    throw("Shapes of calculated observables (N=$Ny) and reference weights (N=$Nw0) are not consistent!")
+    return false
+end
+
+function consistent_shapes(Y::Vector{T}, y::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+    return consistent_shapes(Y, y) && consistent_shapes(y, w0) 
+end
+
+# function consistent_eltype()???
+
 function read_txt(filename)
     data = DelimitedFiles.readdlm(filename)
     return data, size(data)
@@ -40,10 +63,21 @@ function write_txt(filename, arr)
 end
 
 function write_txt_normalized(path; Y_name, Y, y_name, y, w0_name="", w0=[])
-    write_txt(path*Y_name, Y)
-    write_txt(path*y_name, y)
-    if w0_name != ""
-         write_txt(path*w0_name, w0)
+    #todo: check shapes before writing
+    try 
+        consistent_shapes(Y, y, w0) 
+        println("Writing files to path \"$path\".\n")
+        println("Writing data to file \"$Y_name\".")
+        write_txt(path*Y_name, Y)
+        println("Writing calculated observables to file \"$y_name\".")
+        write_txt(path*y_name, y)
+        if w0_name != ""
+            println("Writing reference weights to file \"$w0_name\".")
+            write_txt(path*w0_name, w0)
+        end
+    catch ex
+        println("Shapes of arrays are not consistent! No output!")
+        println(ex)
     end
 end
 
