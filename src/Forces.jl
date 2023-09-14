@@ -74,9 +74,9 @@ function weights_from_forces_2!(w, logw0, f, y) # slower than original!!!
 end
 
 """
-    grad_neg_log_posterior!(grad, aves, theta, w, w0, y, Y)
+    grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)
 
-Gradient of the negative log-posterior [eq 20 of JCTC 2019] for normalized forces and observables
+Gradient of the negative log-posterior [eq 20 of JCTC 2019] for normalized forces and observables.
 
 The averages are pre-calculated for efficiency reasons. The gradient 'grad' is updated. 
 """
