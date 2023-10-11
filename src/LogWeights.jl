@@ -1,17 +1,16 @@
 """
-The BioEn log-weights method. 
-
-The code should be as slim as possible:
-o No calculation of quantities that can be recalculated afterwards. 
-o No calculation of quantities for monitoring the progress. 
-o No saving of results during theta-series. 
-o N>>M
+The BioEn log-weights method [Köfinger et al. J. Chem. Theory. Comput. 15 (2019)]
 """
 module LogWeights
 
 import ..Utils, Optim
 using Printf
 
+"""
+    average(w::Vector{T}, g::Vector{T})  where T<:AbstractFloat
+
+Weighted average.
+"""
 function average(w::Vector{T}, g::Vector{T})  where T<:AbstractFloat
     ave = zero(T)
     for mu in eachindex(g) # Note that g[end]=0, where g are log-weights
@@ -20,6 +19,11 @@ function average(w::Vector{T}, g::Vector{T})  where T<:AbstractFloat
     return ave
 end
 
+"""
+    weights_from_logweights!(w, g)
+
+Normalized weights from log-weights g with g[end]=0. 
+"""
 function weights_from_logweights!(w, g)
     norm = zero(eltype(w))
     max = maximum(g)
@@ -34,6 +38,12 @@ function weights_from_logweights!(w, g)
     end 
 end
 
+
+"""
+    logweights_from_weights!(g, w)
+
+Log-weights g=log(w) with g[end]=0.
+"""
 function logweights_from_weights!(g, w) # for w=1/N, all log-weights are zero!
     tmp = -log(w[end])
     for mu in eachindex(g)
@@ -41,6 +51,11 @@ function logweights_from_weights!(g, w) # for w=1/N, all log-weights are zero!
     end
 end
 
+"""
+     grad_neg_log_posterior!(grad, g, G, aves, theta, w, w0, y, Y)
+
+The gradient of the negative log-posterior with respect to the N-1 log-weights g. 
+"""
 function grad_neg_log_posterior!(grad, g, G, aves, theta, w, w0, y, Y)
     d_ave = average(w, G) - average(w, g) 
     for mu in eachindex(grad)
@@ -102,6 +117,13 @@ function optimize_fg!(grad, aves, theta, g, w, w0, G0, y, Y, method, options)
     return results
 end
 
+"""
+    optimize_fg!(aves, theta, g, w, w0, G0, y, Y, method, options)
+
+Optimize log-posterior using analytical expression for gradient. 
+
+The function fg!(F, G, g) is defined to pre-calculate quantities need for function value and gradient. 
+"""
 function optimize_fg!(aves, theta, g, w, w0, G0, y, Y, method, options)
 
     function fg!(F, G, g)
@@ -166,6 +188,11 @@ function optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
     return gs, results
 end
 
+"""
+    refined_weights(gs)
+
+Calculate weights form 2d array of log-weigths (e.g., for different theta values).
+"""
 function refined_weights(gs)
     ws = zeros(size(gs,1)+1, size(gs,2))
     for i in axes(gs, 2)

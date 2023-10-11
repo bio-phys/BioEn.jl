@@ -1,3 +1,6 @@
+"""
+The BioEn posterior [Hummer and Köfinger, J. Chem. Phys.  143 (2015)] and helper functions. 
+"""
 module Utils
 
 function xlogx(x::Number)

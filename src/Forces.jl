@@ -1,11 +1,5 @@
 """
-The BioEn forces method. 
-
-The code should be as slim as possible:
-o No calculation of quantities that can be recalculated afterwards. 
-o No calculation of quantities for monitoring the progress. 
-o No saving of results during theta-series. 
-o N>>M
+The BioEn forces method [Köfinger et al. J. Chem. Theory. Comput. 15 (2019)]
 """
 module Forces
 
@@ -57,21 +51,21 @@ function weights_from_forces!(w, logw0, f, y)
     return nothing
 end
 
-function weights_from_forces_2!(w, logw0, f, y) # slower than original!!!
-    # NxM 
-    norm = 0. 
+# function weights_from_forces_2!(w, logw0, f, y) # slower than original!!!
+#     # NxM 
+#     norm = 0. 
 
-    for alpha in eachindex(w) # N loop
-        w[alpha] = logw0[alpha]
-        for j in eachindex(f) # M loop
-            w[alpha] += y[alpha, j]*f[j]
-        end    
-        w[alpha] = exp(w[alpha]) 
-        norm += w[alpha]
-    end
-    w ./= norm # N loop
-    return nothing
-end
+#     for alpha in eachindex(w) # N loop
+#         w[alpha] = logw0[alpha]
+#         for j in eachindex(f) # M loop
+#             w[alpha] += y[alpha, j]*f[j]
+#         end    
+#         w[alpha] = exp(w[alpha]) 
+#         norm += w[alpha]
+#     end
+#     w ./= norm # N loop
+#     return nothing
+# end
 
 """
     grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)
@@ -138,7 +132,6 @@ The averages are pre-calculated for efficiency reasons. The gradient 'grad' is u
 #     grad_neg_log_posterior_2!(grad, aves, theta, w, logw0, y, Y, dummy)
 #     return nothing
 # end
-
 function grad_neg_log_posterior!(grad, aves, theta, w, logw0, y, Y)
     grad .= 0.
     for alpha in eachindex(w) # N loop
@@ -308,6 +301,11 @@ function optimize(theta_series, w0, y, Y, method, options, fs_init) # should be 
     return fs, results # todo: force should not be stored and returned. They can be recalculated from weights.
 end
 
+"""
+    refined_weights(fs, logw0, y)
+
+Calculate weights form 2d array of forces (e.g., for different theta values).
+"""
 function refined_weights(fs, logw0, y)
     ws = zeros(size(y,1), size(fs,2))
     for i in axes(fs, 2)
