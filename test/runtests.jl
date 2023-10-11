@@ -1,6 +1,7 @@
 using Test
-includet("../src/Models.jl")
-includet("../src/BioEn.jl")
+include("../../RefinementModels.jl/src/RefinementModels.jl")
+include("../../BioEn.jl/src/BioEn.jl")
+#includet("../src/BioEn.jl")
 
 # Input
 n=50
@@ -10,12 +11,12 @@ sigmas = [3.]
 x = range(1,n)
 
 # Model
-u = DoubleWell.energy(x)
-p = DoubleWell.distribution(x)
+u = RefinementModels.DiscDoubleWell.energy(x)
+p = RefinementModels.DiscDoubleWell.distribution(x)
 
 # Sampling
 N = 5000
-sample = DoubleWell.sample(N, x, p)
+# sample = RefinementModels.DiscDoubleWell.sample(N, x, p)
 y = zeros(N, M);
 y[:,1] =  sample;
 w0 = ones(N)/N
