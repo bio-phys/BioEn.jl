@@ -12,7 +12,7 @@ For optimization, one can either choose the log-weights method (LogWeights.jl) o
 
 Note that https://github.com/bio-phys/RefinementModels.jl provides synthetic data for simple models for refinement. Example scripts save output for use with BioEn.jl. 
 
-Note that this module is mainly intended for method development. It provides an alternative to the efficient Python/C implementation at https://github.com/bio-phys/BioEn, which we suggest for applications. 
+Note that BioEn.jl is mainly intended for method development. It is an alternative to the efficient Python/C implementation at https://github.com/bio-phys/BioEen intended for applications. 
 
 # Usage 
 
