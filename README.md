@@ -10,7 +10,7 @@ Output are the refined weights and the corresponding series of values of the con
 
 For optimization, one can either choose the log-weights method (LogWeights.jl) or the forces method (Forces.jl) [2]. We use https://github.com/JuliaNLSolvers/Optim.jl [3] for optimization. 
 
-Note that https://github.com/bio-phys/RefinementModels.jl provides simple models for refinement with example scripts saving the synthetic data for use with BioEn.jl. 
+Note that https://github.com/bio-phys/RefinementModels.jl provides synthetic data for simple models for refinement. Example scripts save output for use with BioEn.jl. 
 
 Note that this module is mainly intended for method development. It provides an alternative to the efficient Python/C implementation at https://github.com/bio-phys/BioEn, which we suggest for applications. 
 
