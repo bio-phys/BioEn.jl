@@ -17,11 +17,11 @@ Note that BioEn.jl is mainly intended for method development. It is an alternati
 # Usage 
 
 To make the functions available, e.g., in a Jupyter notebook, use 
-
+```
 import Pkg
 Pkg.activate("PATH/BioEn.jl")
 import BioEn
-
+```
 where PATH is your path to the module directory. 
 
 # References
