@@ -1,6 +1,5 @@
 """
 The BioEn method [Hummer and Köfinger, J. Chem. Phys.  143 (2015)]
-
 """
 module BioEn
 
