@@ -88,7 +88,7 @@ Auxiliary function to allocate output arrays.
 """
 function allocate_output(N, n_thetas)
     gs = zeros((N-1, n_thetas)) # all optimal weights
-    return ws
+    return gs
 end 
 
 """
