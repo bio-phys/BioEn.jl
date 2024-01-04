@@ -108,10 +108,15 @@ function averages(w::Vector{T}, y::Array{T, 2}) where T<:AbstractFloat
     return aves
 end
 
+
 """
     chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
 
 Chi-squared value for given averages using normalized observabels.
+
+    chi2(w::Vector{T}, y::Array{T, 2}, Y::Vector{T}) where T<:AbstractFloat
+
+Chi-squared value using normalized observabels.
 """
 function chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
     chi2 = zero(T)
@@ -120,6 +125,12 @@ function chi2(aves::Vector{T}, Y::Vector{T}) where T<:AbstractFloat
     end
     return chi2
 end
+
+function chi2(w::Vector{T}, y::Array{T, 2}, Y::Vector{T}) where T<:AbstractFloat
+    aves = averages(w, y)
+    return chi2(aves, Y)
+end
+
 
 """
     chi2!(aves::Vector{T}, w::Vector{T}, y::Array{T, 2}, Y::Vector{T}) where T<:AbstractFloat
@@ -188,6 +199,7 @@ end
 Relative entropy from 2d array of weights.
 """
 function get_S_opt(theta_series::Vector{T}, ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+    # todo: theta_series not needed. n_theta from ws
     n_theta = size(theta_series, 1)
     S_opt = zeros(T, n_theta)
     for i in eachindex(theta_series)  #1:n_theta
@@ -201,7 +213,7 @@ end
 
 Chi-squared from 2d array of weights for use with normalized observables.
 """
-function get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
+function get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat # todo: theta_series not needed. n_theta from ws
     n_theta = size(theta_series, 1)
     chi2_opt = zeros(T, n_theta)
     aves = zeros(T, size(Y, 1))
