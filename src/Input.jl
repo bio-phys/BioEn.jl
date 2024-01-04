@@ -80,6 +80,7 @@ end
 
 function write_txt(filename, arr)
     DelimitedFiles.writedlm(filename, arr)
+    return 
 end
 
 function write_txt_normalized(path; Y_name, Y, y_name, y, w0_name="", w0=[])
@@ -97,6 +98,7 @@ function write_txt_normalized(path; Y_name, Y, y_name, y, w0_name="", w0=[])
     else
         println("Shapes of arrays are not consistent! No output!")
     end
+    return
 end
 
 
