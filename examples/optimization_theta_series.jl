@@ -30,7 +30,7 @@ algorithm = "log-weights"
 print("\nUsing algorithm \"$algorithm\".")
 
 if algorithm == "forces"
-    fs, res = BioEn.Forces.optimize_series([theta_series[1]], w0, y, Y, method, options);
+    fs, res = BioEn.Forces.optimize_series(theta_series, w0, y, Y, method, options);
     ws = BioEn.Forces.refined_weights(fs, log.(w0), y);
 elseif algorithm == "log-weights"
     gs, res = BioEn.LogWeights.optimize_series(theta_series, w0, y, Y, method, options; verbose=false)
