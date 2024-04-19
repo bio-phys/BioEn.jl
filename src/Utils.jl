@@ -3,6 +3,8 @@ The BioEn posterior [Hummer and Köfinger, J. Chem. Phys.  143 (2015)] and helpe
 """
 module Utils
 
+# todo: replace S by SKL
+
 function xlogx(x::Number)
     result = x * log(x)
     return iszero(x) ? zero(result) : result
@@ -131,7 +133,6 @@ function chi2(w::Vector{T}, y::Array{T, 2}, Y::Vector{T}) where T<:AbstractFloat
     return chi2(aves, Y)
 end
 
-
 """
     chi2!(aves::Vector{T}, w::Vector{T}, y::Array{T, 2}, Y::Vector{T}) where T<:AbstractFloat
 
@@ -194,30 +195,29 @@ function neg_log_posterior!(aves::Vector{T}, theta::T, w::Vector{T}, w0::Vector{
 end
 
 """
-    get_S_opt(theta_series::Vector{T}, ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+    get_S_opt(ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
 
 Relative entropy from 2d array of weights.
 """
-function get_S_opt(theta_series::Vector{T}, ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
-    # todo: theta_series not needed. n_theta from ws
-    n_theta = size(theta_series, 1)
+function get_S_opt(ws::Array{T,2}, w0::Vector{T}) where T<:AbstractFloat
+    n_theta = size(ws, 2)
     S_opt = zeros(T, n_theta)
-    for i in eachindex(theta_series)  #1:n_theta
+    for i in 1:n_theta
         S_opt[i] = SKL(ws[:,i], w0)
     end
     return S_opt
 end
 
 """
-    get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
+    get_chi2_opt(ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat
 
 Chi-squared from 2d array of weights for use with normalized observables.
 """
-function get_chi2_opt(theta_series::Vector{T}, ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat # todo: theta_series not needed. n_theta from ws
-    n_theta = size(theta_series, 1)
+function get_chi2_opt(ws::Array{T,2}, y::Array{T,2}, Y::Vector{T}) where T<:AbstractFloat 
+    n_theta = size(ws, 2)
     chi2_opt = zeros(T, n_theta)
     aves = zeros(T, size(Y, 1))
-    for i in eachindex(theta_series) #1:n_theta
+    for i in 1:n_theta
         chi2_opt[i] = chi2!(aves, ws[:,i], y, Y)
     end
     return chi2_opt
